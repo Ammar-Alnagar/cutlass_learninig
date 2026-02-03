@@ -24,3 +24,4 @@ This module synthesizes all concepts from Modules 01-05 into complete, optimized
 - `collective_operations.cu` - Threads working in coordination
 - `full_kernel_example.cu` - Complete kernel integrating all components
 - `performance_profiling.cu` - Optimization and measurement techniques
+- `BUILD.md` - Build instructions for sm_89

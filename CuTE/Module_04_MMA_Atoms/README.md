@@ -24,3 +24,4 @@ This module integrates layout algebra, tensor operations, and efficient data mov
 - `thread_tensor_mapping.cu` - Thread-to-Tensor-Core assignment
 - `accumulator_management.cu` - Working with accumulator registers
 - `mixed_precision_mma.cu` - Different precision configurations
+- `BUILD.md` - Build instructions for sm_89

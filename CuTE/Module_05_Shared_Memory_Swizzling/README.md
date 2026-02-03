@@ -24,3 +24,4 @@ This module applies layout algebra principles to solve shared memory bank confli
 - `bank_conflict_analysis.cu` - Identifying and diagnosing conflicts
 - `swizzling_techniques.cu` - Implementing swizzling patterns
 - `conflict_resolution_examples.cu` - Practical conflict resolution
+- `BUILD.md` - Build instructions for sm_89

@@ -24,3 +24,4 @@ This module combines layout algebra (Module 01) and tensor concepts (Module 02) 
 - `vectorized_loads.cu` - 128-bit vectorized operations
 - `async_copy_sm89.cu` - cp.async implementation for sm_89
 - `coalescing_patterns.cu` - Memory access optimization
+- `BUILD.md` - Build instructions for sm_89

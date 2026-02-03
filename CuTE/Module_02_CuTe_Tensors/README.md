@@ -23,3 +23,4 @@ This module extends the layout concepts from Module 01 by showing how layouts be
 - `tensor_basics.cu` - Basic tensor creation and access
 - `tensor_slicing.cu` - Advanced slicing techniques
 - `tensor_composition.cu` - Combining tensors and layouts
+- `BUILD.md` - Build instructions for sm_89
