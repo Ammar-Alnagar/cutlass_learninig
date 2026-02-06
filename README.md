@@ -75,6 +75,41 @@ Specialized algorithms optimized for GPU architectures:
 - **Fused Layer Normalization**: Optimized GPU implementation
 - **Compressed Sparse Formats**: CSR and Blocked-Ellpack implementations
 
+### 7. Triton Programming for GPU Acceleration
+Comprehensive 8-module curriculum for Triton programming, a domain-specific language for GPU programming with performance close to hand-written CUDA:
+
+- **Module 1**: Introduction to Triton and Basic Tensor Operations - Understanding GPU programming with Triton
+- **Module 2**: Memory Operations and Data Movement - Efficient memory loading and storing with coalesced access
+- **Module 3**: Basic Arithmetic and Element-wise Operations - Mathematical operations and element-wise computations
+- **Module 4**: Block Operations and Tiling Concepts - Working with 2D blocks and tiling strategies
+- **Module 5**: Matrix Multiplication Fundamentals - Implementing efficient matrix multiplication with tiling
+- **Module 6**: Advanced Memory Layouts and Optimizations - Memory coalescing and cache optimization techniques
+- **Module 7**: Reduction Operations - Parallel reduction operations like sum, max, and argmax
+- **Module 8**: Advanced Techniques and Best Practices - Performance profiling, numerical stability, and optimization strategies
+
+### 8. NCCL (NVIDIA Collective Communications Library)
+8-module learning path covering collective communications for multi-GPU and distributed computing:
+
+- **Module 1**: Introduction to NCCL - Concepts and Setup - Understanding NCCL fundamentals and environment setup
+- **Module 2**: Basic Collective Operations - AllReduce, Broadcast - Core operations for distributed training
+- **Module 3**: Advanced Collective Operations - Reduce, AllGather, Scatter - Expanding collective operation capabilities
+- **Module 4**: Multi-GPU Programming with NCCL - Implementing multi-GPU patterns and paradigms
+- **Module 5**: Multi-Node Communication - Distributed computing across multiple machines
+- **Module 6**: Performance Optimization - Tuning NCCL for maximum throughput and minimum latency
+- **Module 7**: Integration with Deep Learning Frameworks - Using NCCL with PyTorch, TensorFlow, and other frameworks
+
+### 9. GPU Kernel Profiling and Optimization
+8-module mastery course for identifying and optimizing GPU kernel bottlenecks:
+
+- **Module 1**: Introduction to GPU Computing and Profiling Concepts - Understanding GPU architecture and profiling fundamentals
+- **Module 2**: Setting Up Profiling Tools and Environment - Installing and configuring GPU profiling tools (Nsight Compute, Nsight Systems)
+- **Module 3**: Basic Profiling Techniques - Interpreting key GPU metrics and identifying basic bottlenecks
+- **Module 4**: Identifying Common Bottlenecks - Recognizing memory-bound, compute-bound, and other performance issues
+- **Module 5**: Memory Optimization Techniques - Coalesced access, shared memory usage, and memory hierarchy optimization
+- **Module 6**: Computational Optimization Strategies - Arithmetic intensity, loop optimization, and mathematical function optimization
+- **Module 7**: Advanced Profiling and Analysis - Complex profiling scenarios and advanced analysis techniques
+- **Module 8**: Real-world Case Studies and Practice - Applying optimization techniques to real-world kernels
+
 ## Target Hardware & Architecture
 
 - **Primary Target**: NVIDIA RTX 4060 (Compute Capability 8.9 / Ada Lovelace)
@@ -182,6 +217,22 @@ nvcc -std=c++17 -arch=sm_89 --expt-relaxed-constexpr \
 2. **Template Metaprogramming** (2 weeks) - Modules 7-8
 3. **Performance Optimization** (2 weeks) - Modules 9-10
 
+### Track 4: Triton Programming (Weeks 25-32)
+1. **Triton Fundamentals** (2 weeks) - Modules 1-2 (Basic operations and memory)
+2. **Triton Intermediate** (3 weeks) - Modules 3-5 (Arithmetic, blocks, and matrix multiplication)
+3. **Triton Advanced** (3 weeks) - Modules 6-8 (Advanced memory, reductions, and best practices)
+
+### Track 5: NCCL Collective Communications (Weeks 33-38)
+1. **NCCL Basics** (2 weeks) - Modules 1-2 (Introduction and basic collectives)
+2. **NCCL Advanced** (2 weeks) - Modules 3-4 (Advanced collectives and multi-GPU programming)
+3. **NCCL Optimization** (2 weeks) - Modules 5-7 (Multi-node, performance tuning, and framework integration)
+
+### Track 6: GPU Profiling and Optimization (Weeks 39-46)
+1. **Profiling Fundamentals** (2 weeks) - Modules 1-2 (GPU computing concepts and tool setup)
+2. **Basic Profiling Techniques** (2 weeks) - Modules 3-4 (Basic techniques and bottleneck identification)
+3. **Optimization Strategies** (2 weeks) - Modules 5-6 (Memory and computational optimization)
+4. **Advanced Profiling** (2 weeks) - Modules 7-8 (Advanced analysis and real-world case studies)
+
 ## Key Resources
 
 ### Internal Documentation
@@ -189,6 +240,9 @@ nvcc -std=c++17 -arch=sm_89 --expt-relaxed-constexpr \
 - `HANDS_ON_IMPLEMENTATION_GUIDE.md` - Practical implementation strategies
 - `LEARNING_CHECKLIST.md` - Progress tracking and milestones
 - `LEARNING_PATH_SUMMARY.md` - Executive summary of the learning journey
+- `Triton/README.md` - Triton programming learning path and resources
+- `NCCL/NCCL-Learning-Path/README.md` - NCCL collective communications guide
+- `Profiling/GPU_Profiling_Mastery/README.md` - GPU profiling and optimization resources
 
 ### External References
 - [NVIDIA CUTLASS Documentation](https://github.com/NVIDIA/cutlass)
@@ -207,6 +261,7 @@ Each learning track includes:
 Completion certificates are available in:
 - `CuTE/COMPLETION_CERTIFICATE.md`
 - Individual module directories for CUTLASS 3.x
+- Individual module directories for Triton, NCCL, and Profiling tracks
 
 ## Contributing
 
