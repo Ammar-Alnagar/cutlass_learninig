@@ -4,7 +4,7 @@
 
 This comprehensive learning repository is designed to transform software engineers into expert AI kernel developers, focusing on the cutting-edge technologies required for developing high-performance GPU kernels using NVIDIA's latest architectures and libraries.
 
-## 🎯 Learning Tracks
+## Learning Tracks
 
 ### 1. CuTE (CUTLASS 3.x) - Modern GPU Programming
 Progressive 6-module curriculum mastering CuTe (CUDA Templates for Element-wise operations) for RTX 4060 (sm_89) architecture:
@@ -57,7 +57,7 @@ Complete build system expertise for GPU development:
 - **Module 05**: Trees - Hierarchical data structures
 - **Module 06**: Graphs - Complex relationship modeling
 
-## 🚀 Target Hardware & Architecture
+## Target Hardware & Architecture
 
 - **Primary Target**: NVIDIA RTX 4060 (Compute Capability 8.9 / Ada Lovelace)
 - **Tensor Core Support**: FP16, BF16, INT8, and FP8 operations
@@ -65,7 +65,7 @@ Complete build system expertise for GPU development:
 - **Warp-level Primitives**: Cooperative thread operations
 - **Asynchronous Operations**: cp.async for overlapping computation and memory transfer
 
-## 📚 Learning Philosophy
+## Learning Philosophy
 
 This repository emphasizes **composable abstractions** over manual indexing. Instead of traditional nested loops, we focus on:
 
@@ -81,7 +81,7 @@ This repository emphasizes **composable abstractions** over manual indexing. Ins
 3. **Performance**: Every abstraction should maintain or improve performance
 4. **Correctness**: Mathematical precision and numerical accuracy are paramount
 
-## 🔧 Prerequisites
+## Prerequisites
 
 Before starting this learning journey, ensure you have:
 
@@ -92,7 +92,7 @@ Before starting this learning journey, ensure you have:
 - **Experience with performance profiling tools (Nsight Compute, nvprof)**
 - **Linux development environment with NVIDIA GPU**
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 ### System Requirements
 ```bash
@@ -147,7 +147,7 @@ nvcc -std=c++17 -arch=sm_89 --expt-relaxed-constexpr \
      module_file.cu -o module_output
 ```
 
-## 🗺️ Recommended Learning Path
+## Recommended Learning Path
 
 ### Track 1: Foundational Skills (Weeks 1-8)
 1. **DSA Fundamentals** (2 weeks) - Complete all 6 modules
@@ -164,7 +164,7 @@ nvcc -std=c++17 -arch=sm_89 --expt-relaxed-constexpr \
 2. **Template Metaprogramming** (2 weeks) - Modules 7-8
 3. **Performance Optimization** (2 weeks) - Modules 9-10
 
-## 📖 Key Resources
+## Key Resources
 
 ### Internal Documentation
 - `COMPLETE_LEARNING_GUIDE.md` - Comprehensive roadmap for the entire curriculum
@@ -178,7 +178,7 @@ nvcc -std=c++17 -arch=sm_89 --expt-relaxed-constexpr \
 - [Nsight Compute Profiler](https://developer.nvidia.com/nsight-compute)
 - [GPU Architecture Whitepapers](https://www.nvidia.com/en-us/data-center/ampere-architecture-whitepaper/)
 
-## 🎓 Assessment & Certification
+## Assessment & Certification
 
 Each learning track includes:
 - **Knowledge Checks**: Conceptual understanding assessments
@@ -190,7 +190,7 @@ Completion certificates are available in:
 - `CuTE/COMPLETION_CERTIFICATE.md`
 - Individual module directories for CUTLASS 3.x
 
-## 🤝 Contributing
+## Contributing
 
 This repository is designed to be a collaborative learning resource. Contributions are welcome in the form of:
 - Bug fixes and improvements to existing modules
@@ -198,7 +198,7 @@ This repository is designed to be a collaborative learning resource. Contributio
 - Performance optimization techniques
 - Documentation enhancements
 
-## 📈 Career Impact
+## Career Impact
 
 Upon completing this learning path, you will be prepared for roles such as:
 - **Senior GPU Kernel Engineer**
@@ -207,7 +207,7 @@ Upon completing this learning path, you will be prepared for roles such as:
 - **Deep Learning Compiler Developer**
 - **GPU Performance Optimization Expert**
 
-## 📞 Support
+## Support
 
 For questions, clarifications, or discussions about the material:
 - Open an issue in the repository
