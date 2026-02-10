@@ -1,287 +1,254 @@
-# Tiled Layouts
+# CuTe Tiled Layouts
 
 ## Concept Overview
 
-Tiled layouts in CuTe organize data into hierarchical tiles that match the GPU memory hierarchy (registers, shared memory, global memory). This approach automatically computes addresses for complex access patterns without manual index arithmetic, enabling efficient data movement and computation across different memory levels.
+CuTe organizes data into hierarchical tiles that match the GPU memory hierarchy (registers, shared memory, global memory). Tiled layouts represent data decomposition into blocks that can be processed efficiently at different memory levels. Layout transformations automatically compute addresses for tiled access patterns without manual index arithmetic, enabling efficient implementations of algorithms like matrix multiplication.
 
 ## Understanding Tiled Layouts
 
-### Hierarchical Data Organization
+### What are Tiled Layouts?
+- Hierarchical decomposition of data into rectangular blocks (tiles)
+- Match GPU memory hierarchy: register tiles → shared memory tiles → global memory tiles
+- Enable efficient data movement between memory levels
+- Support various tiling strategies for different algorithms
 
-Tiled layouts create a multi-level hierarchy:
-1. **Outer tiles**: Represent data blocks moved between memory levels
-2. **Inner tiles**: Represent data blocks processed together
-3. **Elements**: Individual data items within tiles
+### Tiled Layout Structure
+```
+Global Memory (Large Matrix)
+    ↓
+Tiled Decomposition
+    ↓
+Shared Memory Tiles (Block-level)
+    ↓
+Register Tiles (Thread-level)
+```
 
-This hierarchy mirrors the GPU's memory system:
-- Global memory ↔ Outer tiles
-- Shared memory ↔ Middle tiles  
-- Registers ↔ Inner tiles / individual elements
+## Tiled Layout Creation
 
-### Basic Tiled Layout Example
-
+### 1. Basic Tiled Layout
 ```cpp
-#include "cutlass/cute/layout.hpp"
+#include <cute/layout.hpp>
 using namespace cute;
 
-// Create a simple 2D layout
-auto full_layout = make_layout(make_shape(Int<128>{}, Int<256>{}));  // 128x256 matrix
-
-// Define tile dimensions
-auto tile_shape = make_shape(Int<32>{}, Int<64>{});  // Each tile is 32x64
-
-// Create tiled layout
-auto tiled_layout = tile(full_layout, tile_shape);
-
-// This creates a layout with:
-// - Outer shape: (128/32, 256/64) = (4, 4) tiles
-// - Inner shape: (32, 64) elements per tile
+// Create a 128x128 matrix decomposed into 32x32 tiles
+auto matrix_shape = make_shape(Int<128>{}, Int<128>{});
+auto tile_shape = make_shape(Int<32>{}, Int<32>{});
+auto tiled_layout = tile_to_shape(matrix_shape, tile_shape);
+// Results in a 4x4 grid of 32x32 tiles
 ```
 
-## Creating Tiled Layouts
-
-### Simple Tiling
-
+### 2. Multi-Level Tiling
 ```cpp
-// Tile a 1D array
-auto array_layout = make_layout(make_shape(Int<1024>{}));  // 1024 elements
-auto tile_1d = make_shape(Int<256>{});                    // Tile size of 256
-auto tiled_1d = tile(array_layout, tile_1d);              // 4 tiles of 256 elements each
+// Hierarchical tiling: Global → Shared → Register
+auto global_shape = make_shape(Int<128>{}, Int<128>{});
+auto shared_tile = make_shape(Int<64>{}, Int<64>{});
+auto register_tile = make_shape(Int<8>{}, Int<8>{});
 
-// Tile a 2D matrix
-auto matrix_layout = make_layout(make_shape(Int<64>{}, Int<128>{}));  // 64x128 matrix
-auto tile_2d = make_shape(Int<16>{}, Int<32>{});                     // 16x32 tiles
-auto tiled_2d = tile(matrix_layout, tile_2d);                        // 4x4 tiles of 16x32 each
+// First level: Global to Shared
+auto shared_layout = tile_to_shape(global_shape, shared_tile);
+
+// Second level: Shared to Register
+auto register_layout = tile_to_shape(shared_tile, register_tile);
 ```
 
-### Multi-Level Tiling
-
+### 3. Thread Mapping to Tiles
 ```cpp
-// Create a 3-level tiling hierarchy
-auto full_matrix = make_layout(make_shape(Int<128>{}, Int<256>{}));
+// Map threads to elements within a tile
+auto tile_shape = make_shape(Int<16>{}, Int<16>{});
+auto thread_block = make_shape(Int<256>{});  // 256 threads per block
+auto thr_layout = make_layout(thread_block);
 
-// Level 1: Coarse tiles for global/shared memory transfer
-auto coarse_tile = make_shape(Int<64>{}, Int<128>{});
-auto coarse_tiled = tile(full_matrix, coarse_tile);  // 2x2 coarse tiles
+// Distribute threads across the tile
+auto tile_thr_layout = zipped_divide(make_layout(tile_shape), thr_layout);
+```
 
-// Level 2: Fine tiles for shared/register transfer
-auto fine_tile = make_shape(Int<16>{}, Int<32>{});
-auto fine_tiled = tile(coarse_tiled, fine_tile);     // Each coarse tile has 4x4 fine tiles
+## Tiled Layout Operations
 
-// This creates a hierarchy: (2,2) coarse tiles × (4,4) fine tiles × (16,32) elements
+### 1. Tile Extraction
+```cpp
+// Extract a specific tile from a tiled layout
+auto tiled_matrix = make_tiled_layout(make_shape(Int<128>{}, Int<128>{}), 
+                                     make_shape(Int<32>{}, Int<32>{}));
+auto tile_coord = make_coord(1, 2);  // Get tile at position (1,2)
+auto specific_tile = logical_divide(tiled_matrix, make_shape(Int<32>{}, Int<32>{}))[tile_coord];
+```
+
+### 2. Tile Composition
+```cpp
+// Combine multiple tiles into a larger layout
+auto tile_A = make_layout(make_shape(Int<16>{}, Int<16>{}));
+auto tile_B = make_layout(make_shape(Int<16>{}, Int<16>{}));
+auto combined = make_layout(make_shape(tile_A, tile_B), 
+                           make_stride(size<0>(tile_A), size<0>(tile_B)));
+```
+
+### 3. Tile Transformation
+```cpp
+// Transform tile layout (e.g., transpose)
+auto original_tile = make_layout(make_shape(Int<8>{}, Int<4>{}));
+auto transposed_tile = right_inverse(original_tile);  // 4x8 transposed
 ```
 
 ## Practical Tiled Layout Examples
 
-### Matrix Multiplication Tiling
-
+### 1. Matrix Multiplication Tiling
 ```cpp
-// Tiled layout for GEMM (General Matrix Multiplication)
-template<int M, int N, int K, int BM, int BN, int BK>
+// Tiled GEMM: C = A * B
+template<int BM, int BN, int BK>
 auto make_gemm_tiled_layouts() {
-    // Matrix dimensions
-    auto A_shape = make_shape(Int<M>{}, Int<K>{});
-    auto B_shape = make_shape(Int<K>{}, Int<N>{});
-    auto C_shape = make_shape(Int<M>{}, Int<N>{});
+    // Tile shapes
+    auto M = Int<BM>{};
+    auto N = Int<BN>{};
+    auto K = Int<BK>{};
     
-    // Tile dimensions
-    auto A_tile = make_shape(Int<BM>{}, Int<BK>{});
-    auto B_tile = make_shape(Int<BK>{}, Int<BN>{});
-    auto C_tile = make_shape(Int<BM>{}, Int<BN>{});
+    // Tiled layouts for each matrix
+    auto layout_A = make_layout(make_shape(M, K));
+    auto layout_B = make_layout(make_shape(K, N));
+    auto layout_C = make_layout(make_shape(M, N));
     
-    // Create base layouts (assuming row-major for simplicity)
-    auto A_base = make_layout(A_shape, make_stride(_1{}, _M{}));
-    auto B_base = make_layout(B_shape, make_stride(_1{}, _K{}));
-    auto C_base = make_layout(C_shape, make_stride(_1{}, _M{}));
-    
-    // Create tiled layouts
-    auto A_tiled = tile(A_base, A_tile);
-    auto B_tiled = tile(B_base, B_tile);
-    auto C_tiled = tile(C_base, C_tile);
-    
-    return make_tuple(A_tiled, B_tiled, C_tiled);
-}
-
-// Example: 128x256x512 GEMM with 32x32x16 tiles
-auto [A_layout, B_layout, C_layout] = make_gemm_tiled_layouts<128, 256, 512, 32, 32, 16>();
-```
-
-### Memory Hierarchy Matching
-
-```cpp
-// Layout that matches GPU memory hierarchy
-template<int REG_TILE_M, int REG_TILE_N, 
-         int SHARED_TILE_M, int SHARED_TILE_N,
-         int GLOBAL_TILE_M, int GLOBAL_TILE_N>
-auto make_hierarchical_layout() {
-    // Start with global memory tile
-    auto global_shape = make_shape(Int<GLOBAL_TILE_M>{}, Int<GLOBAL_TILE_N>{});
-    auto global_layout = make_layout(global_shape);
-    
-    // Add shared memory tiling
-    auto shared_tile = make_shape(Int<SHARED_TILE_M>{}, Int<SHARED_TILE_N>{});
-    auto shared_layout = tile(global_layout, shared_tile);
-    
-    // Add register tiling
-    auto reg_tile = make_shape(Int<REG_TILE_M>{}, Int<REG_TILE_N>{});
-    auto reg_layout = tile(shared_layout, reg_tile);
-    
-    return reg_layout;
-    // This creates: (G_M/S_M, G_N/S_N) shared tiles × (S_M/R_M, S_N/R_N) reg tiles × (R_M, R_N) elements
+    return make_tuple(layout_A, layout_B, layout_C);
 }
 ```
 
-## Working with Tiled Layouts
-
-### Accessing Tiled Data
-
+### 2. Shared Memory Tiling
 ```cpp
-// Function to iterate through a tiled layout
-template<class TiledLayout>
-__device__ void process_tiled_data(float* data, TiledLayout const& layout) {
-    // Iterate through outer tiles
-    for (int outer_i = 0; outer_i < size<0>(layout.shape()); ++outer_i) {
-        for (int outer_j = 0; outer_j < size<1>(layout.shape()); ++outer_j) {
-            auto outer_coord = make_coord(outer_i, outer_j);
-            
-            // Get the inner tile layout for this outer tile
-            auto inner_layout = layout(outer_coord);
-            
-            // Iterate through elements in the inner tile
-            for (int inner_idx = 0; inner_idx < size(inner_layout); ++inner_idx) {
-                auto inner_coord = idx2crd(inner_idx, inner_layout.shape());
-                auto full_coord = make_coord(get<0>(outer_coord), get<1>(outer_coord), 
-                                           get<0>(inner_coord), get<1>(inner_coord));
-                
-                int addr = layout(make_coord(outer_coord, inner_coord));
-                data[addr] *= 2.0f;  // Process the element
-            }
-        }
-    }
+// Layout for loading tiles to shared memory
+template<int TileM, int TileN, int Threads>
+auto make_shared_layout() {
+    auto tile_shape = make_shape(Int<TileM>{}, Int<TileN>{});
+    auto thread_layout = make_layout(Int<Threads>{});
+    
+    // Distribute elements among threads
+    auto elements_per_thread = size(tile_shape) / Threads;
+    auto shared_layout = make_layout(tile_shape, thread_layout);
+    
+    return shared_layout;
 }
 ```
 
-### Tiled Data Movement
-
+### 3. Register Tiling
 ```cpp
-// Tiled copy between different memory spaces
-template<class Layout>
-__device__ void tiled_copy(float const* src, float* dst, 
-                          Layout const& layout) {
-    // Copy each tile separately
-    CUTE_UNROLL
-    for (int tile_idx = 0; tile_idx < size<0>(layout.shape()); ++tile_idx) {
-        auto tile_layout = layout(make_coord(tile_idx));
-        
-        // Copy elements within this tile
-        CUTE_UNROLL
-        for (int elem_idx = 0; elem_idx < size<1>(layout.shape()); ++elem_idx) {
-            auto elem_coord = idx2crd(elem_idx, tile_layout.shape());
-            int src_addr = tile_layout(elem_coord, _0{});
-            int dst_addr = tile_layout(elem_coord, _1{});
-            dst[dst_addr] = src[src_addr];
-        }
-    }
+// Layout for distributing tile elements to registers
+template<int TileM, int TileN, int WarpSize = 32>
+auto make_register_layout() {
+    auto tile_shape = make_shape(Int<TileM>{}, Int<TileN>{});
+    auto warp_layout = make_layout(Int<WarpSize>{});
+    
+    // Each thread gets multiple elements
+    auto elements_per_thread = size(tile_shape) / WarpSize;
+    auto register_layout = zipped_divide(tile_shape, warp_layout);
+    
+    return register_layout;
 }
 ```
 
-## Advanced Tiling Concepts
+## Memory Hierarchy Matching
 
-### Padding for Bank Conflict Avoidance
-
+### 1. Global to Shared Movement
 ```cpp
-// Tiled layout with padding to avoid shared memory bank conflicts
-template<int TILE_M, int TILE_N>
-auto make_padded_tiled_layout() {
-    // Add padding to avoid bank conflicts (commonly +1 for 32-bank systems)
-    auto padded_shape = make_shape(Int<TILE_M>{}, Int<TILE_N+1>{});  // +1 padding
-    auto base_layout = make_layout(padded_shape);
-    
-    // Original tile without padding
-    auto logical_shape = make_shape(Int<TILE_M>{}, Int<TILE_N>{});
-    
-    // Create a layout that maps logical coordinates to padded physical coordinates
-    auto padded_layout = make_layout(
-        logical_shape,
-        make_stride(size<0>(logical_shape),  // stride for rows
-                   size<0>(logical_shape)+1) // stride for cols with padding
-    );
-    
-    return padded_layout;
-}
+// Define layouts for data movement
+auto global_layout = make_layout(make_shape(Int<1024>{}, Int<1024>{}));
+auto shared_shape = make_shape(Int<128>{}, Int<128>{});
+auto shared_layout = tile_to_shape(global_layout.shape(), shared_shape);
+
+// Each block handles one shared tile
+auto block_layout = make_layout(make_shape(Int<256>{}));  // 256 threads per block
 ```
 
-### Swizzled Tiled Layouts
-
+### 2. Shared to Register Movement
 ```cpp
-// Tiled layout with swizzling to avoid bank conflicts
-template<int TILE_M, int TILE_N>
-auto make_swizzled_tiled_layout() {
-    auto base_layout = make_layout(make_shape(Int<TILE_M>{}, Int<TILE_N>{}));
-    
-    // Define swizzling function
-    auto swizzle_fn = [](int row, int col) {
-        // XOR-based swizzling to distribute across banks
-        int swizzled_col = col ^ (row & 0x7);  // Swizzle with lower 3 bits of row
-        return make_coord(row, swizzled_col);
-    };
-    
-    // Apply swizzling to the layout
-    auto swizzled_layout = transform_layout(base_layout, swizzle_fn);
-    
-    return swizzled_layout;
+// Layout for moving from shared to registers
+auto shared_tile = make_layout(make_shape(Int<128>{}, Int<128>{}));
+auto thread_layout = make_layout(Int<256>{});  // 256 threads in block
+
+// Distribute shared tile elements to threads
+auto thr_tile_layout = zipped_divide(shared_tile, thread_layout);
+```
+
+## Tiled Layout Optimization Strategies
+
+### 1. Coalescing Optimization
+```cpp
+// Ensure tiled access maintains coalescing
+auto tile_shape = make_shape(Int<32>{}, Int<32>{});
+auto thread_layout = make_layout(make_shape(Int<32>{}, Int<8>{}));  // 32x8 = 256 threads
+
+// Arrange threads to access consecutive memory
+auto coalesced_layout = make_layout(tile_shape, thread_layout);
+```
+
+### 2. Bank Conflict Avoidance
+```cpp
+// Add padding to avoid shared memory bank conflicts
+auto base_tile = make_shape(Int<32>{}, Int<32>{});
+auto padded_tile = make_shape(Int<32>{}, Int<33>{});  // +1 to avoid conflicts
+auto bank_safe_layout = make_layout(padded_tile);
+```
+
+### 3. Occupancy Optimization
+```cpp
+// Balance tile size with occupancy
+auto small_tile = make_shape(Int<16>{}, Int<16>{});   // Smaller = more blocks
+auto large_tile = make_shape(Int<64>{}, Int<64>{});   // Larger = more work per block
+
+// Choose based on shared memory and occupancy requirements
+```
+
+## Advanced Tiled Layout Concepts
+
+### 1. Irregular Tiling
+```cpp
+// Non-uniform tiling for irregular data
+auto irregular_shape = make_shape(Int<100>{}, Int<50>{});
+auto tile_pattern = make_shape(Int<32>{}, Int<32>{});
+auto tiled_layout = make_layout(irregular_shape, tile_pattern);
+```
+
+### 2. Overlapping Tiles (Stencil Operations)
+```cpp
+// Tiling with overlap for stencil operations
+auto matrix_shape = make_shape(Int<128>{}, Int<128>{});
+auto tile_shape = make_shape(Int<32>{}, Int<32>{});
+auto overlap = make_shape(Int<2>{}, Int<2>{});  // 2-element overlap
+
+// Create overlapping tiles
+auto stencil_layout = make_overlapped_layout(matrix_shape, tile_shape, overlap);
+```
+
+### 3. Dynamic Tiling
+```cpp
+// Runtime-configurable tile sizes
+template<class M, class N, class K>
+auto make_dynamic_tiled_layout(M m, N n, K k) {
+    auto matrix_shape = make_shape(m, n);
+    auto tile_shape = make_shape(k, k);
+    return tile_to_shape(matrix_shape, tile_shape);
 }
 ```
 
 ## Performance Considerations
 
-### Tile Size Selection
+### 1. Tile Size Selection
+- **Too small**: High overhead, poor data reuse
+- **Too large**: Exceeds shared memory capacity
+- **Just right**: Balances reuse and capacity
 
-```cpp
-// Guidelines for selecting tile sizes
-struct TileSizeGuidelines {
-    // For register-level tiling
-    static constexpr int REG_TILE_MIN = 8;   // Minimum efficient tile size
-    static constexpr int REG_TILE_MAX = 32;  // Maximum practical tile size
-    
-    // For shared memory tiling
-    static constexpr int SHARED_TILE_MIN = 32;   // Minimum for coalescing
-    static constexpr int SHARED_TILE_PREF = 128; // Preferred for occupancy
-    
-    // Should be multiples of warp size (32) for coalescing
-    static constexpr int COALESCING_FACTOR = 32;
-};
-```
+### 2. Memory Access Patterns
+- Maintain coalescing within tiles
+- Consider access patterns of the algorithm
+- Optimize for cache line utilization
 
-### Memory Hierarchy Alignment
-
-```cpp
-// Align tile sizes with memory hierarchy characteristics
-template<int SM_COUNT, int MAX_THREADS_PER_SM, int WARP_SIZE = 32>
-struct MemoryHierarchyAlignment {
-    // Calculate optimal tile sizes based on hardware characteristics
-    static constexpr int OPTIMAL_SHARED_MEM_PER_BLOCK = 48 * 1024; // 48KB typical
-    
-    // Ensure tiles fit in shared memory
-    template<int ELEMENT_SIZE_BYTES>
-    static constexpr int max_tile_elements() {
-        return OPTIMAL_SHARED_MEM_PER_BLOCK / ELEMENT_SIZE_BYTES;
-    }
-    
-    // Balance between occupancy and memory usage
-    static constexpr int preferred_concurrent_tiles() {
-        return (MAX_THREADS_PER_SM / WARP_SIZE) * 2; // 2x for occupancy
-    }
-};
-```
+### 3. Thread Divergence
+- Ensure uniform work distribution across threads
+- Minimize divergent execution paths within tiles
 
 ## Expected Knowledge Outcome
 
 After mastering this concept, you should be able to:
 - Recognize how CuTe expresses hierarchical tiling through layout composition
-- Create multi-level tiled layouts that match GPU memory hierarchy
-- Apply tiling strategies for different memory levels (global, shared, register)
-- Design efficient tiled access patterns for computational kernels
+- Design tiled layouts that match the GPU memory hierarchy
+- Apply tiling strategies to optimize data reuse and memory access patterns
+- Understand how tiling enables efficient implementations of algorithms like GEMM
 
 ## Hands-on Tutorial
 

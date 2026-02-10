@@ -1,353 +1,383 @@
-# MMA Atoms and Traits
+# CuTe MMA Atoms and Traits
 
 ## Concept Overview
 
-CuTe wraps tensor core operations in MMA (Matrix Multiply-Accumulate) atoms that specify input/output fragment layouts and operation shapes. MMA traits define how to partition computation across threads and accumulate results for different tensor core configurations, providing a high-level abstraction for tensor core programming.
+CuTe wraps tensor core operations in MMA (Matrix Multiply Accumulate) atoms that specify input/output fragment layouts and operation shapes. MMA traits define how to partition computation across threads and accumulate results for different tensor core configurations. This abstraction simplifies the use of tensor cores while maintaining flexibility for different data layouts and computation patterns.
 
 ## Understanding MMA Atoms and Traits
 
-### MMA Atoms
+### What are MMA Atoms?
+- Represent tensor core operations (matrix multiply-accumulate)
+- Specify input and output data layouts for tensor cores
+- Abstract the complexity of tensor core programming
+- Define the shape and precision of operations
 
-MMA atoms encapsulate:
-- The specific tensor core operation to perform
-- Input and output data layouts
-- Data types for operands and accumulators
-- Hardware-specific implementation details
+### What are MMA Traits?
+- Define how computation is partitioned across threads
+- Specify accumulation behavior
+- Determine thread-to-data mapping for tensor operations
+- Configure for different tensor core architectures
 
-### MMA Traits
+## MMA Atom Types
 
-MMA traits define:
-- How computation is partitioned across threads
-- How results are accumulated
-- Thread-to-data mapping for tensor operations
-- Hardware-specific configuration parameters
-
-## MMA Atom Basics
-
-### Defining MMA Atoms
-
+### 1. Standard MMA Atoms
 ```cpp
-#include "cutlass/cute/atom/mma_atom.hpp"
+#include <cute/atom/mma_atom.hpp>
 using namespace cute;
 
-// Basic MMA atom for FP16 tensor operations (Ampere architecture)
-using MMA_Atom_F16 = MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>;
+// Standard 16x8x16 half-precision MMA operation
+auto mma_16816 = make_mma_atom(MMA_Traits_HSHS_HS<>{});
 
-// MMA atom for TF32 operations (Ampere architecture) 
-using MMA_Atom_TF32 = MMA_Atom<SM80_16x8x8_TF32TF32TF32F32_TN>;
+// 16x8x16 single-precision MMA operation  
+auto mma_16816_sp = make_mma_atom(MMA_Traits_SSSS_SS<>{});
 
-// MMA atom for integer operations (INT8 on Turing/Ampere)
-using MMA_Atom_S8 = MMA_Atom<SM75_8x8x16_S8S8S8S32_TN>;
+// 8x8x4 integer MMA operation
+auto mma_884_int = make_mma_atom(MMA_Traits_I8I32_I32<>{});
 ```
 
-### Common MMA Atom Types
-
+### 2. Architecture-Specific MMA Atoms
 ```cpp
-// Different MMA atom types for various architectures and precisions
-using MMA_FP16_TN = MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>;    // Half precision, TN layout
-using MMA_FP16_NT = MMA_Atom<SM80_16x8x16_F16F16F16F16_NT>;    // Half precision, NT layout
-using MMA_TF32_TN = MMA_Atom<SM80_16x8x8_TF32TF32TF32F32_TN>;  // TF32 precision
-using MMA_INT8_TN = MMA_Atom<SM80_16x8x32_S8S8S8S32_TN>;      // INT8 operations
-using MMA_FP64_TN = MMA_Atom<SM80_16x8x4_F64F64F64F64_TN>;    // Double precision
+// For different compute capabilities
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
+    // Ampere: TF32 tensor cores
+    auto tf32_mma = make_mma_atom(MMA_Traits_TF32TF32_F32<>{});
+#elif defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 750
+    // Turing: Integer tensor cores
+    auto int_mma = make_mma_atom(MMA_Traits_I8I32_I32<>{});
+#else
+    // Volta: Half-precision tensor cores
+    auto half_mma = make_mma_atom(MMA_Traits_HSHS_HS<>{});
+#endif
 ```
 
-## MMA Traits Fundamentals
+## MMA Traits Concepts
 
-### Creating MMA Operations
-
+### 1. Thread Mapping Traits
 ```cpp
-// Create an MMA operation with specific traits
-template<int M, int N, int K>
-__device__ void create_mma_example() {
-    // Define MMA atom
-    using MMATrait = MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>;
+// Define how threads map to MMA operations
+struct MMA_Thread_Map {
+    using ALayout = Layout<_4,_8>;     // 4x8 layout for A operand
+    using BLayout = Layout<_8,_4>;     // 8x4 layout for B operand  
+    using CLayout = Layout<_8,_8>;     // 8x8 layout for C operand
+    using LayoutC = Layout<_8,_8>;     // Output layout
+};
+```
+
+### 2. Data Layout Traits
+```cpp
+// Specify input/output data layouts
+template<>
+struct MMA_Traits<MMA_Op_HSHS_HS> {
+    using ElementA = half_t;           // Data type for A
+    using ElementB = half_t;           // Data type for B
+    using ElementC = half_t;           // Data type for C
+    using ElementAccumulator = half_t; // Accumulator type
     
-    // Define the problem shape
-    auto problem_shape = make_shape(Int<M>{}, Int<N>{}, Int<K>{});
-    
-    // Create the MMA operation with appropriate tiling
-    auto mma_op = make_tiled_mma(MMATrait{}, problem_shape);
-    
-    // Get the thread layout for the MMA operation
-    auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-    
-    // Allocate fragments for A, B, and C operands
-    typename MMATrait::ElementA frag_A;
-    typename MMATrait::ElementB frag_B; 
-    typename MMATrait::ElementC frag_C;
-    
-    // Initialize accumulator to zero
-    fill(frags_C, 0);
+    using LayoutA = Layout<_16,_16>;   // A operand layout (16x16)
+    using LayoutB = Layout<_16,_8>;    // B operand layout (16x8)
+    using LayoutC = Layout<_16,_8>;    // C operand layout (16x8)
+};
+```
+
+## MMA Operation Patterns
+
+### 1. Basic MMA Operation
+```cpp
+// Perform a single MMA operation
+template<class MMA>
+__device__ void basic_mma_operation(MMA const& mma_atom,
+                                   auto const& frag_A,
+                                   auto const& frag_B, 
+                                   auto& frag_C) {
+    // Execute the MMA: C = A * B + C
+    mma_atom(frag_A, frag_B, frag_C);
 }
 ```
 
-### Thread Partitioning
-
+### 2. Tiled MMA Operations
 ```cpp
-// Understanding how threads participate in MMA operations
-template<class MMATrait>
-__device__ void thread_partitioning_example() {
-    // Create tiled MMA operation
-    auto tiled_mma = make_tiled_mma(MMATrait{}, 
-                                  make_shape(_128{}, _128{}, _64{}));  // 128x128x64 problem
+// Perform MMA on tiled fragments
+template<int M, int N, int K>
+__device__ void tiled_mma_operation(float const* A, float const* B, float* C) {
+    // Create MMA atom
+    auto mma_atom = make_mma_atom(MMA_Traits_SSSS_SS<>{});
     
-    // Get thread slice - how this thread participates in the MMA
-    auto thr_mma = tiled_mma.get_thread_slice(threadIdx.x);
+    // Create fragments for operands
+    auto frag_A = make_fragment_like(mma_atom.ALayout(), A);
+    auto frag_B = make_fragment_like(mma_atom.BLayout(), B);
+    auto frag_C = make_fragment_like(mma_atom.CLayout(), C);
     
-    // Get the layout of data this thread is responsible for
-    auto A_layout = thr_mma.aLayout();
-    auto B_layout = thr_mma.bLayout(); 
-    auto C_layout = thr_mma.cLayout();
+    // Load fragments
+    copy(mma_atom.ALayout(), A, frag_A);
+    copy(mma_atom.BLayout(), B, frag_B);
     
-    // Each thread holds a subset of the full operand matrices
-    // The exact partitioning depends on the MMA atom's thread mapping
+    // Execute MMA
+    mma_atom(frag_A, frag_B, frag_C);
+    
+    // Store result
+    copy(mma_atom.CLayout(), frag_C, C);
+}
+```
+
+### 3. Accumulating MMA Operations
+```cpp
+// Perform multiple MMA operations with accumulation
+template<class MMA, int Stages>
+__device__ void accumulating_mma(MMA const& mma_atom,
+                               auto const& As, auto const& Bs, 
+                               auto& Cs) {
+    // Initialize accumulator
+    auto accum = Cs;
+    
+    // Perform multiple MMA operations
+    CUTLASS_PRAGMA_UNROLL
+    for (int k = 0; k < Stages; ++k) {
+        mma_atom(As[k], Bs[k], accum);
+    }
+    
+    // Store accumulated result
+    Cs = accum;
+}
+```
+
+## MMA Fragment Management
+
+### 1. Creating Fragments
+```cpp
+// Create fragments compatible with MMA atom
+auto mma_atom = make_mma_atom(MMA_Traits_HSHS_HS<>{});
+
+// Create fragments for operands
+auto frag_A = make_fragment_like(mma_atom.ALayout());  // For A operand
+auto frag_B = make_fragment_like(mma_atom.BLayout());  // For B operand
+auto frag_C = make_fragment_like(mma_atom.CLayout());  // For C operand
+
+// Or create fragments with specific data
+auto frag_A_data = make_fragment_like(mma_atom.ALayout(), device_ptr_A);
+```
+
+### 2. Loading Fragments
+```cpp
+// Load data into MMA fragments
+template<class MMA>
+__device__ void load_mma_fragments(MMA const& mma_atom,
+                                  auto const& src_layout,
+                                  auto const& src_data,
+                                  auto& frag_A,
+                                  auto& frag_B) {
+    // Copy data to fragments according to MMA layout
+    copy(src_layout, src_data, frag_A);
+    copy(src_layout, src_data, frag_B);
+}
+```
+
+### 3. Storing Results
+```cpp
+// Store MMA results back to memory
+template<class MMA>
+__device__ void store_mma_result(MMA const& mma_atom,
+                                auto const& frag_C,
+                                auto const& dst_layout,
+                                auto& dst_data) {
+    // Copy result fragment back to memory
+    copy(dst_layout, frag_C, dst_data);
 }
 ```
 
 ## Practical MMA Examples
 
-### Basic GEMM with MMA Atoms
-
+### 1. Matrix Multiplication with MMA
 ```cpp
-// Matrix multiplication using MMA atoms
-template<int BM, int BN, int BK>
-__device__ void mma_gemm_step(
-    half const* A_tile,
-    half const* B_tile, 
-    float* C_tile) {
+// GEMM using tensor cores
+template<int TileM, int TileN, int TileK>
+__device__ void mma_gemm(half_t const* A, half_t const* B, half_t* C) {
+    // Create MMA atom for half-precision
+    auto mma_atom = make_mma_atom(MMA_Traits_HSHS_HS<>{});
     
-    // Define MMA trait for half-precision operations
-    using MMATrait = MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>;
-    auto mma_op = make_tiled_mma(MMATrait{}, 
-                               make_shape(Int<BM>{}, Int<BN>{}, Int<BK>{}));
+    // Create fragments for the tile
+    auto frag_A = make_fragment_like(mma_atom.ALayout(), A);
+    auto frag_B = make_fragment_like(mma_atom.BLayout(), B);
+    auto frag_C = make_fragment_like(mma_atom.CLayout(), C);
     
-    // Get thread's view of the operands
-    auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
+    // Load operands
+    copy(mma_atom.ALayout(), A, frag_A);
+    copy(mma_atom.BLayout(), B, frag_B);
     
-    // Create fragments for operands
-    Tensor tAgA = thr_mma.partition_A(A_tile);  // A operand fragment
-    Tensor tBgB = thr_mma.partition_B(B_tile);  // B operand fragment  
-    Tensor tCrC = thr_mma.partition_C(C_tile);  // C accumulator fragment
+    // Execute MMA: C = A * B + C
+    mma_atom(frag_A, frag_B, frag_C);
     
-    // Initialize accumulator
-    CUTE_UNROLL
-    for (int i = 0; i < size(tCrC); ++i) {
-        tCrC(i) = 0.0f;
-    }
+    // Store result
+    copy(mma_atom.CLayout(), frag_C, C);
+}
+```
+
+### 2. Batched MMA Operations
+```cpp
+// Perform MMA on batched data
+template<int BatchSize, int M, int N, int K>
+__device__ void batched_mma(half_t const* A_batch, 
+                           half_t const* B_batch,
+                           half_t* C_batch) {
+    auto mma_atom = make_mma_atom(MMA_Traits_HSHS_HS<>{});
     
-    // Perform MMA operations
-    CUTE_UNROLL
-    for (int k = 0; k < size<2>(tAgA); ++k) {  // Iterate over K dimension
-        mma_op(tAgA(_,_,k), tBgB(_,_,k), tCrC, tCrC);
+    CUTLASS_PRAGMA_UNROLL
+    for (int b = 0; b < BatchSize; ++b) {
+        // Get pointers for current batch
+        auto A_ptr = A_batch + b * M * K;
+        auto B_ptr = B_batch + b * K * N;  
+        auto C_ptr = C_batch + b * M * N;
+        
+        // Perform MMA for this batch
+        mma_gemm<M, N, K>(A_ptr, B_ptr, C_ptr);
     }
 }
 ```
 
-### Multi-Stage MMA Pipeline
-
+### 3. Mixed Precision MMA
 ```cpp
-// Pipelined MMA operations to hide memory latency
-template<int STAGES>
-struct MMAPipeline {
-    // Storage for operands in different pipeline stages
-    half A_buffer[STAGES][32][16];  // Example sizes
-    half B_buffer[STAGES][16][32];
-    float C_buffer[32][32];
+// Mixed precision operation (inputs FP16, accumulator FP32)
+__device__ void mixed_precision_mma(half_t const* A, 
+                                   half_t const* B,
+                                   float* C) {
+    // Use MMA trait that supports mixed precision
+    auto mma_atom = make_mma_atom(MMA_Traits_HSHS_SS<>{});
     
-    template<int STAGE>
-    __device__ void execute_mma_stage() {
-        if constexpr (STAGE < STAGES) {
-            using MMATrait = MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>;
-            auto mma_op = make_tiled_mma(MMATrait{}, 
-                                       make_shape(_32{}, _32{}, _16{}));
-            
-            auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-            
-            // Partition operands for this thread
-            Tensor tAgA = thr_mma.partition_A(A_buffer[STAGE]);
-            Tensor tBgB = thr_mma.partition_B(B_buffer[STAGE]); 
-            Tensor tCrC = thr_mma.partition_C(C_buffer);
-            
-            // Execute MMA operation
-            mma_op(tAgA, tBgB, tCrC, tCrC);
+    auto frag_A = make_fragment_like(mma_atom.ALayout(), A);
+    auto frag_B = make_fragment_like(mma_atom.BLayout(), B);
+    auto frag_C = make_fragment_like(mma_atom.CLayout(), C);
+    
+    // Execute mixed-precision MMA
+    mma_atom(frag_A, frag_B, frag_C);
+    
+    // Store result to FP32 output
+    copy(mma_atom.CLayout(), frag_C, C);
+}
+```
+
+## MMA Configuration Strategies
+
+### 1. Thread Participation
+```cpp
+// Configure how threads participate in MMA
+auto mma_atom = make_mma_atom(MMA_Traits_HSHS_HS<>{});
+
+// Determine how many threads participate in each MMA operation
+constexpr int threads_per_mma = size(mma_atom.ThrID());
+
+// Distribute work among threads
+auto thread_id = threadIdx.x % threads_per_mma;
+```
+
+### 2. Layout Compatibility
+```cpp
+// Ensure data layouts are compatible with MMA requirements
+template<class MMA>
+__device__ bool check_layout_compatibility(MMA const& mma_atom,
+                                         auto const& data_layout) {
+    // Check if data layout matches MMA requirements
+    return size(data_layout) == size(mma_atom.ALayout());
+}
+```
+
+### 3. Precision Selection
+```cpp
+// Select appropriate MMA based on precision requirements
+template<typename InputType, typename OutputType>
+auto select_mma_atom() {
+    if constexpr (std::is_same_v<InputType, half_t> && 
+                  std::is_same_v<OutputType, half_t>) {
+        return make_mma_atom(MMA_Traits_HSHS_HS<>{});
+    } else if constexpr (std::is_same_v<InputType, half_t> && 
+                        std::is_same_v<OutputType, float>) {
+        return make_mma_atom(MMA_Traits_HSHS_SS<>{});
+    } else if constexpr (std::is_same_v<InputType, float> && 
+                        std::is_same_v<OutputType, float>) {
+        return make_mma_atom(MMA_Traits_SSSS_SS<>{});
+    } else {
+        static_assert(false, "Unsupported precision combination");
+    }
+}
+```
+
+## Integration with Tiled Layouts
+
+### 1. Tiled MMA Operations
+```cpp
+// Combine tiling with MMA operations
+template<int TileM, int TileN, int TileK>
+__device__ void tiled_mma_gemm(half_t const* A, 
+                              half_t const* B, 
+                              half_t* C) {
+    // Create tiled layouts
+    auto A_tile_layout = make_layout(make_shape(Int<TileM>{}, Int<TileK>{}));
+    auto B_tile_layout = make_layout(make_shape(Int<TileK>{}, Int<TileN>{}));
+    auto C_tile_layout = make_layout(make_shape(Int<TileM>{}, Int<TileN>{}));
+    
+    // Create MMA atom
+    auto mma_atom = make_mma_atom(MMA_Traits_HSHS_HS<>{});
+    
+    // Process tiles
+    CUTLASS_PRAGMA_UNROLL
+    for (int k = 0; k < TileK; k += mma_atom.K()) {
+        // Load tile fragments
+        auto frag_A = make_fragment_like(mma_atom.ALayout(), A + k);
+        auto frag_B = make_fragment_like(mma_atom.BLayout(), B + k);
+        auto frag_C = make_fragment_like(mma_atom.CLayout(), C);
+        
+        // Execute MMA
+        mma_atom(frag_A, frag_B, frag_C);
+    }
+}
+```
+
+### 2. Hierarchical MMA
+```cpp
+// Multi-level MMA for large matrices
+template<int MatrixM, int MatrixN, int MatrixK,
+         int BlockM, int BlockN, int BlockK,
+         int TileM, int TileN, int TileK>
+__device__ void hierarchical_mma_gemm(half_t const* A,
+                                     half_t const* B,
+                                     half_t* C) {
+    // Process at block level
+    for (int mb = 0; mb < MatrixM; mb += BlockM) {
+        for (int nb = 0; nb < MatrixN; nb += BlockN) {
+            for (int kb = 0; kb < MatrixK; kb += BlockK) {
+                // Process at tile level using MMA
+                tiled_mma_gemm<TileM, TileN, TileK>(
+                    A + mb * MatrixK + kb,
+                    B + kb * MatrixN + nb, 
+                    C + mb * MatrixN + nb);
+            }
         }
     }
-};
-```
-
-## Advanced MMA Concepts
-
-### MMA Layout Manipulation
-
-```cpp
-// Manipulating MMA layouts for different access patterns
-template<class MMATrait>
-__device__ void layout_manipulation_example() {
-    auto mma_op = make_tiled_mma(MMATrait{}, 
-                               make_shape(_64{}, _64{}, _32{}));
-    
-    auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-    
-    // Get original layouts
-    auto A_layout = thr_mma.aLayout();
-    auto B_layout = thr_mma.bLayout();
-    auto C_layout = thr_mma.cLayout();
-    
-    // Transform layouts if needed (e.g., for different memory layouts)
-    auto transformed_A = logical_divide(A_layout, Shape<_2, _2>{});  // Divide into 2x2 subtiles
-    auto transformed_B = logical_divide(B_layout, Shape<_2, _2>{});
-    
-    // Use transformed layouts for custom access patterns
-}
-```
-
-### Mixed Precision MMA Operations
-
-```cpp
-// Example of mixed precision operations
-template<class InputType, class AccType>
-__device__ void mixed_precision_mma() {
-    // Define appropriate MMA trait based on input/output types
-    using MMATrait = typename std::conditional<
-        std::is_same_v<InputType, half> && std::is_same_v<AccType, float>,
-        MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>,
-        typename std::conditional<
-            std::is_same_v<InputType, float> && std::is_same_v<AccType, float>,
-            MMA_Atom<SM80_16x8x8_TF32TF32TF32F32_TN>,
-            MMA_Atom<SM80_16x8x4_F64F64F64F64_TN>  // Default to FP64
-        >::type
-    >::type;
-    
-    auto mma_op = make_tiled_mma(MMATrait{}, 
-                               make_shape(_16{}, _8{}, _16{}));
-    
-    // Perform mixed-precision computation
-    // InputType inputs, AccType accumulator
-}
-```
-
-## Architecture-Specific MMA Operations
-
-### Volta Tensor Cores
-
-```cpp
-// Volta-specific MMA operations (4x4x4 tiles)
-using VoltaMMA = MMA_Atom<SM70_8x8x4_F16F16F16F16_TN>;
-
-template<>
-__device__ void execute_volta_mma<VoltaMMA>(
-    typename VoltaMMA::ElementA const* A_frag,
-    typename VoltaMMA::ElementB const* B_frag,
-    typename VoltaMMA::ElementC* C_frag) {
-    
-    auto mma_op = make_tiled_mma(VoltaMMA{}, 
-                               make_shape(_8{}, _8{}, _4{}));
-    
-    auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-    auto tAgA = thr_mma.partition_A(A_frag);
-    auto tBgB = thr_mma.partition_B(B_frag);
-    auto tCrC = thr_mma.partition_C(C_frag);
-    
-    mma_op(tAgA, tBgB, tCrC, tCrC);
-}
-```
-
-### Ampere Tensor Cores
-
-```cpp
-// Ampere-specific MMA operations with sparse support
-using AmpereMMA = MMA_Atom<SM80_16x8x16_F16F16F16F16_TN>;
-
-template<>
-__device__ void execute_ampere_mma<AmpereMMA>(
-    typename AmpereMMA::ElementA const* A_frag,
-    typename AmpereMMA::ElementB const* B_frag, 
-    typename AmpereMMA::ElementC* C_frag) {
-    
-    auto mma_op = make_tiled_mma(AmpereMMA{}, 
-                               make_shape(_16{}, _8{}, _16{}));
-    
-    auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-    auto tAgA = thr_mma.partition_A(A_frag);
-    auto tBgB = thr_mma.partition_B(B_frag);
-    auto tCrC = thr_mma.partition_C(C_frag);
-    
-    // Ampere supports sparse tensor operations
-    #ifdef __CUDA_ARCH__
-    #if __CUDA_ARCH__ >= 800
-    // Could include sparse MMA operations here
-    #endif
-    #endif
-    
-    mma_op(tAgA, tBgB, tCrC, tCrC);
 }
 ```
 
 ## Performance Considerations
 
-### MMA Scheduling
+### 1. Data Layout Requirements
+- Tensor cores require specific data layouts
+- Input matrices must be arranged appropriately
+- Padding may be needed for alignment
 
-```cpp
-// Optimizing MMA instruction scheduling
-template<int UNROLL_K>
-struct MMAScheduler {
-    template<class MMATrait>
-    __device__ static void scheduled_mma_loop(
-        typename MMATrait::ElementA const* A,
-        typename MMATrait::ElementB const* B,
-        typename MMATrait::ElementC* C,
-        int k_size) {
-        
-        auto mma_op = make_tiled_mma(MMATrait{}, 
-                                   make_shape(_16{}, _8{}, Int<UNROLL_K>{}));
-        auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-        
-        // Unrolled loop for better instruction scheduling
-        for (int k = 0; k < k_size; k += UNROLL_K) {
-            CUTE_UNROLL
-            for (int ku = 0; ku < UNROLL_K; ++ku) {
-                if (k + ku < k_size) {
-                    auto tAgA = thr_mma.partition_A(A + k + ku);
-                    auto tBgB = thr_mma.partition_B(B + k + ku); 
-                    auto tCrC = thr_mma.partition_C(C);
-                    
-                    mma_op(tAgA(_,_,ku), tBgB(_,_,ku), tCrC, tCrC);
-                }
-            }
-        }
-    }
-};
-```
+### 2. Thread Synchronization
+- MMA operations may require coordination between threads
+- Proper synchronization ensures correctness
+- Minimize synchronization overhead
 
-### Memory Access Patterns for MMA
-
-```cpp
-// Ensuring optimal memory access for MMA operands
-template<class MMATrait>
-__device__ void mma_memory_access_pattern() {
-    auto mma_op = make_tiled_mma(MMATrait{}, 
-                               make_shape(_16{}, _8{}, _16{}));
-    
-    auto thr_mma = mma_op.get_thread_slice(threadIdx.x);
-    
-    // The MMA trait defines optimal layouts for memory access
-    auto A_layout = thr_mma.aLayout();
-    auto B_layout = thr_mma.bLayout();
-    
-    // These layouts ensure:
-    // 1. Coalesced memory access when loading operands
-    // 2. Proper data distribution across threads
-    // 3. Alignment with tensor core requirements
-}
-```
+### 3. Memory Bandwidth
+- Tensor cores can saturate memory bandwidth
+- Optimize data loading to feed tensor cores
+- Consider using async copy for overlap
 
 ## Expected Knowledge Outcome
 
 After mastering this concept, you should be able to:
-- Understand how CuTe abstracts tensor core operations and data layouts
+- Understand CuTe's abstraction for tensor core operations and data layouts
 - Create and configure MMA atoms for different tensor core configurations
-- Implement efficient matrix operations using CuTe's MMA abstractions
-- Design thread partitioning strategies for optimal tensor core utilization
+- Use MMA traits to partition computation across threads effectively
+- Design algorithms that efficiently utilize tensor cores for acceleration
 
 ## Hands-on Tutorial
 

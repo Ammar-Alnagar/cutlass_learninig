@@ -1,338 +1,296 @@
 /*
- * Roofline Model Tutorial
- * 
- * This tutorial demonstrates the roofline model for performance analysis.
+ * CUDA Roofline Model Tutorial
+ *
+ * This tutorial demonstrates how to analyze kernels using the roofline model.
  */
 
 #include <cuda_runtime.h>
 #include <stdio.h>
-#include <math.h>
+#include <chrono>
 
-// Class to calculate and analyze roofline metrics
-class RooflineAnalyzer {
-public:
-    struct KernelMetrics {
-        double flops;
-        double bytes;
-        double execution_time_ms;
-        double performance_gflops;
-        double operational_intensity;
-    };
-    
-    static void analyze_kernel(const KernelMetrics& metrics, 
-                              double peak_bandwidth_GB_s, 
-                              double peak_compute_GFLOPs) {
-        double intensity_threshold = peak_compute_GFLOPs / peak_bandwidth_GB_s;
+// Kernel 1: Memory-bound example (vector addition)
+__global__ void vector_add_roofline(float* A, float* B, float* C, int N) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < N) {
+        C[idx] = A[idx] + B[idx];  // 1 FLOP, ~12 bytes (3 reads + 1 write)
+    }
+}
+
+// Kernel 2: Compute-bound example (many operations per memory access)
+__global__ void compute_bound_kernel(float* input, float* output, int N) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < N) {
+        float x = input[idx];
         
-        printf("=== Roofline Analysis ===\n");
-        printf("Operational Intensity: %.3f FLOP/Byte\n", metrics.operational_intensity);
-        printf("Performance: %.2f GFLOP/s\n", metrics.performance_gflops);
-        printf("Intensity Threshold: %.3f FLOP/Byte\n", intensity_threshold);
-        
-        if (metrics.operational_intensity < intensity_threshold) {
-            printf("Status: MEMORY-BOUND\n");
-            printf("Optimization Strategy: Focus on memory access patterns\n");
-        } else {
-            printf("Status: COMPUTE-BOUND\n");
-            printf("Optimization Strategy: Focus on computational efficiency\n");
+        // Many operations per memory access
+        for (int i = 0; i < 50; i++) {
+            x = x * x + 0.1f;
+            x = sqrtf(x);
+            x = x * 2.0f + 1.0f;
         }
         
-        // Calculate efficiency
-        double memory_efficiency = std::min(1.0, metrics.performance_gflops / 
-                                          (peak_bandwidth_GB_s * metrics.operational_intensity)) * 100;
-        double compute_efficiency = (metrics.performance_gflops / peak_compute_GFLOPs) * 100;
-        
-        printf("Memory Efficiency: %.2f%%\n", memory_efficiency);
-        printf("Compute Efficiency: %.2f%%\n", compute_efficiency);
-        printf("========================\n\n");
-    }
-};
-
-// Kernel 1: Memory-bound operation (Vector Addition)
-__global__ void vector_add(float* a, float* b, float* c, int n) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n) {
-        c[idx] = a[idx] + b[idx];  // 1 FLOP, 3*4 bytes = 12 bytes per element
+        output[idx] = x;
     }
 }
 
-// Kernel 2: Compute-bound operation (Polynomial evaluation)
-__global__ void polynomial_eval(float* input, float* output, int n) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n) {
-        float x = input[idx];
-        // 8 FLOPs: 7 multiplications + 1 addition
-        float result = x*x*x*x*x*x*x*x + 2.0f*x*x*x*x*x*x*x + 3.0f*x*x*x*x*x*x + 
-                      4.0f*x*x*x*x*x + 5.0f*x*x*x*x + 6.0f*x*x*x + 7.0f*x*x + 8.0f*x + 9.0f;
-        output[idx] = result;
-    }
-}
-
-// Kernel 3: Matrix multiplication (balanced)
-__global__ void matrix_mult(float* A, float* B, float* C, int N) {
+// Kernel 3: Matrix multiplication (balanced kernel)
+__global__ void gemm_kernel(float* A, float* B, float* C, int N) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (row < N && col < N) {
         float sum = 0.0f;
         for (int k = 0; k < N; k++) {
-            sum += A[row * N + k] * B[k * N + col];  // 1 FMA = 2 FLOPs
+            sum += A[row * N + k] * B[k * N + col];
         }
         C[row * N + col] = sum;
     }
 }
 
-// Kernel 4: SAXPY (Scale and Add) - moderately compute-intensive
-__global__ void saxpy(float alpha, float* x, float* y, int n) {
+// Kernel 4: Stream triad (classic roofline example)
+__global__ void stream_triad(float* a, float* b, float* c, float scalar, int N) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n) {
-        y[idx] = alpha * x[idx] + y[idx];  // 2 FLOPs, 2*4 bytes = 8 bytes per element
+    if (idx < N) {
+        a[idx] = b[idx] + scalar * c[idx];  // 2 ops, ~12 bytes
     }
 }
 
-// Function to measure kernel execution time
-float measure_kernel_time(void (*kernel)(float*, float*, float*, int), 
-                         float* a, float* b, float* c, int n) {
+// Helper function to measure execution time
+float measureKernelTime(void (*kernel)(float*, float*, int), float* input, float* output, int n) {
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    
+
     cudaEventRecord(start);
-    kernel<<<(n + 255) / 256, 256>>>(a, b, c, n);
+    kernel<<<(n + 255) / 256, 256>>>(input, output, n);
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
-    
+
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    
+
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    
-    return milliseconds;
+
+    return milliseconds / 1000.0f;  // Return seconds
 }
 
-// Function to measure matrix multiplication time
-float measure_matmul_time(float* A, float* B, float* C, int N) {
+// Helper function to measure GEMM time
+float measureGEMMTime(float* A, float* B, float* C, int N) {
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    
-    dim3 blockSize(16, 16);
-    dim3 gridSize((N + blockSize.x - 1) / blockSize.x, 
-                  (N + blockSize.y - 1) / blockSize.y);
-    
+
     cudaEventRecord(start);
-    matrix_mult<<<gridSize, blockSize>>>(A, B, C, N);
+    dim3 blockSize(16, 16);
+    dim3 gridSize((N + 15) / 16, (N + 15) / 16);
+    gemm_kernel<<<gridSize, blockSize>>>(A, B, C, N);
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
-    
+
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    
+
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    
-    return milliseconds;
+
+    return milliseconds / 1000.0f;  // Return seconds
 }
+
+// Roofline analysis class
+class RooflineAnalyzer {
+private:
+    double peak_bandwidth;   // GB/s
+    double peak_compute;     // GFLOPS
+    double boundary_oi;      // Boundary operational intensity
+
+public:
+    RooflineAnalyzer(double bw, double comp) 
+        : peak_bandwidth(bw), peak_compute(comp) {
+        boundary_oi = peak_compute / peak_bandwidth;
+    }
+    
+    void analyze_kernel(const char* name, 
+                       double flops, double bytes, double time_sec) {
+        double oi = flops / bytes;  // FLOPs/byte
+        double perf = flops / time_sec / 1e9;  // GFLOPS
+        
+        printf("Kernel: %s\n", name);
+        printf("  FLOPs: %.2e\n", flops);
+        printf("  Bytes: %.2e\n", bytes);
+        printf("  Time: %.6f sec\n", time_sec);
+        printf("  Operational Intensity: %.3f FLOPs/byte\n", oi);
+        printf("  Achieved Performance: %.2f GFLOPS\n", perf);
+        printf("  Memory Bound Threshold: %.3f FLOPs/byte\n", boundary_oi);
+        
+        if (oi < boundary_oi) {
+            printf("  Status: MEMORY-BOUND\n");
+            printf("  Potential: %.2f GFLOPS at current OI\n", 
+                   peak_bandwidth * oi);
+        } else {
+            printf("  Status: COMPUTE-BOUND\n");
+            printf("  Potential: %.2f GFLOPS (compute ceiling)\n", 
+                   peak_compute);
+        }
+        
+        double ideal_perf = std::min(peak_bandwidth * oi, peak_compute);
+        double efficiency = (perf / ideal_perf) * 100.0;
+        printf("  Efficiency: %.2f%% of theoretical peak\n", efficiency);
+        printf("\n");
+    }
+};
 
 int main() {
-    printf("=== Roofline Model Tutorial ===\n\n");
+    printf("=== CUDA Roofline Model Tutorial ===\n\n");
+
+    // Typical GPU specs (adjust based on your hardware)
+    // For example, RTX 3090: ~1.4 TB/s bandwidth, ~35 TFLOPS FP32
+    double peak_bandwidth_GB_s = 936.0;  // Adjust for your GPU
+    double peak_compute_GFLOPS = 35000.0;  // Adjust for your GPU
     
-    // Get device properties to determine peak performance
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
-    
-    printf("Device: %s\n", prop.name);
-    printf("Memory Clock Rate: %d kHz\n", prop.memoryClockRate);
-    printf("Memory Bus Width: %d bits\n", prop.memoryBusWidth);
-    printf("Clock Rate: %d kHz\n", prop.clockRate);
-    
-    // Calculate approximate peak memory bandwidth (simplified)
-    double peak_bandwidth_GB_s = (2.0 * prop.memoryClockRate * 1000.0 * prop.memoryBusWidth / 8) / 1e9;
-    printf("Estimated Peak Memory Bandwidth: %.2f GB/s\n", peak_bandwidth_GB_s);
-    
-    // Estimate peak compute performance (simplified)
-    double cuda_cores = prop.multiProcessorCount * 64; // Rough estimate
-    double clock_GHz = prop.clockRate / 1e6;
-    double peak_compute_GFLOPs = 2 * cuda_cores * clock_GHz; // 2 ops per cycle per core (multiply-add)
-    printf("Estimated Peak Compute Performance: %.2f GFLOP/s\n\n", peak_compute_GFLOPs);
-    
+    RooflineAnalyzer analyzer(peak_bandwidth_GB_s, peak_compute_GFLOPS);
+
     const int N = 1024 * 1024;  // 1M elements
-    const int MAT_SIZE = 512;    // 512x512 matrix
-    const int MAT_ELEMENTS = MAT_SIZE * MAT_SIZE;
-    
+    const int MAT_SIZE = 1024;   // 1024x1024 matrix
     size_t size = N * sizeof(float);
-    size_t mat_size = MAT_ELEMENTS * sizeof(float);
-    
+    size_t mat_size = MAT_SIZE * MAT_SIZE * sizeof(float);
+
     // Allocate host memory
-    float *h_a, *h_b, *h_c, *h_result;
-    h_a = (float*)malloc(size);
-    h_b = (float*)malloc(size);
-    h_c = (float*)malloc(size);
-    h_result = (float*)malloc(size);
-    
-    float *h_A, *h_B, *h_C;
-    h_A = (float*)malloc(mat_size);
-    h_B = (float*)malloc(mat_size);
-    h_C = (float*)malloc(mat_size);
-    
-    // Initialize data
+    float *h_A, *h_B, *h_C, *h_input, *h_output;
+    h_A = (float*)malloc(size);
+    h_B = (float*)malloc(size);
+    h_C = (float*)malloc(size);
+    h_input = (float*)malloc(size);
+    h_output = (float*)malloc(size);
+
+    // Initialize input data
     for (int i = 0; i < N; i++) {
-        h_a[i] = i * 1.0f;
-        h_b[i] = i * 2.0f;
-        h_c[i] = 0.0f;
-    }
-    
-    for (int i = 0; i < MAT_ELEMENTS; i++) {
         h_A[i] = i * 1.0f;
         h_B[i] = i * 2.0f;
         h_C[i] = 0.0f;
+        h_input[i] = i * 0.5f;
+        h_output[i] = 0.0f;
+    }
+
+    // Allocate device memory
+    float *d_A, *d_B, *d_C, *d_input, *d_output;
+    cudaMalloc(&d_A, size);
+    cudaMalloc(&d_B, size);
+    cudaMalloc(&d_C, size);
+    cudaMalloc(&d_input, size);
+    cudaMalloc(&d_output, size);
+
+    // Matrix memory allocations
+    float *d_mat_A, *d_mat_B, *d_mat_C;
+    cudaMalloc(&d_mat_A, mat_size);
+    cudaMalloc(&d_mat_B, mat_size);
+    cudaMalloc(&d_mat_C, mat_size);
+
+    // Copy input data to device
+    cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_C, h_C, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_input, h_input, size, cudaMemcpyHostToDevice);
+
+    // Example 1: Memory-bound kernel (vector addition)
+    printf("1. Memory-Bound Kernel Analysis (Vector Addition):\n");
+    float time_vector_add = measureKernelTime(vector_add_roofline, d_A, d_C, N);
+    
+    // Calculate metrics for vector addition
+    // Operations: N additions = N FLOPs
+    // Data: 3*N elements * 4 bytes = 12*N bytes
+    double flops_vector_add = N;
+    double bytes_vector_add = 3.0 * N * sizeof(float);
+    
+    analyzer.analyze_kernel("Vector Addition", flops_vector_add, bytes_vector_add, time_vector_add);
+
+    // Example 2: Compute-bound kernel
+    printf("2. Compute-Bound Kernel Analysis:\n");
+    float time_compute = measureKernelTime(compute_bound_kernel, d_input, d_output, N);
+    
+    // Calculate metrics for compute-bound kernel
+    // Operations: N * 50 iterations * 3 ops per iter = 150*N FLOPs
+    // Data: 2*N elements * 4 bytes = 8*N bytes
+    double flops_compute = N * 50 * 3;  // 50 iterations * 3 ops per iteration
+    double bytes_compute = 2.0 * N * sizeof(float);  // 2 reads + 1 write per output
+    
+    analyzer.analyze_kernel("Compute-Bound Kernel", flops_compute, bytes_compute, time_compute);
+
+    // Example 3: Matrix multiplication (GEMM)
+    printf("3. Matrix Multiplication Analysis (GEMM):\n");
+    
+    // Initialize matrices
+    float *h_mat_A = (float*)malloc(mat_size);
+    float *h_mat_B = (float*)malloc(mat_size);
+    float *h_mat_C = (float*)malloc(mat_size);
+    
+    for (int i = 0; i < MAT_SIZE * MAT_SIZE; i++) {
+        h_mat_A[i] = 1.0f;
+        h_mat_B[i] = 2.0f;
+        h_mat_C[i] = 0.0f;
     }
     
-    // Allocate device memory
-    float *d_a, *d_b, *d_c, *d_result;
-    cudaMalloc(&d_a, size);
-    cudaMalloc(&d_b, size);
-    cudaMalloc(&d_c, size);
-    cudaMalloc(&d_result, size);
+    cudaMemcpy(d_mat_A, h_mat_A, mat_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_mat_B, h_mat_B, mat_size, cudaMemcpyHostToDevice);
     
-    float *d_A, *d_B, *d_C;
-    cudaMalloc(&d_A, mat_size);
-    cudaMalloc(&d_B, mat_size);
-    cudaMalloc(&d_C, mat_size);
+    float time_gemm = measureGEMMTime(d_mat_A, d_mat_B, d_mat_C, MAT_SIZE);
     
-    // Copy data to device
-    cudaMemcpy(d_a, h_a, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, h_b, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_c, h_c, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A, h_A, mat_size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, h_B, mat_size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_C, h_C, mat_size, cudaMemcpyHostToDevice);
+    // Calculate metrics for GEMM
+    // Operations: MAT_SIZE^3 multiply-adds = 2*MAT_SIZE^3 FLOPs
+    // Data: 3*MAT_SIZE^2 elements * 4 bytes = 12*MAT_SIZE^2 bytes
+    double flops_gemm = 2.0 * MAT_SIZE * MAT_SIZE * MAT_SIZE;
+    double bytes_gemm = 3.0 * MAT_SIZE * MAT_SIZE * sizeof(float);
     
-    // Example 1: Vector Addition (Memory-bound)
-    printf("1. Vector Addition (Memory-bound example):\n");
-    printf("   Operation: C[i] = A[i] + B[i]\n");
-    printf("   FLOPs per element: 1\n");
-    printf("   Bytes per element: 12 (3 arrays * 4 bytes)\n");
-    printf("   Operational intensity: 1/12 ≈ 0.08 FLOP/Byte\n");
+    analyzer.analyze_kernel("Matrix Multiplication (GEMM)", flops_gemm, bytes_gemm, time_gemm);
+
+    // Example 4: Stream triad
+    printf("4. Stream Triad Analysis:\n");
+    float time_stream = measureKernelTime(stream_triad, d_A, d_C, N);
     
-    float time_vector_add = measure_kernel_time(vector_add, d_a, d_b, d_c, N);
+    // Calculate metrics for stream triad: a[i] = b[i] + scalar * c[i]
+    // Operations: N multiply-adds = 2*N FLOPs
+    // Data: 3*N elements * 4 bytes = 12*N bytes
+    double flops_stream = 2.0 * N;
+    double bytes_stream = 3.0 * N * sizeof(float);
     
-    // Calculate metrics
-    double flops_vector_add = N;  // 1 FLOP per element
-    double bytes_vector_add = 3 * N * sizeof(float);  // 3 arrays accessed
-    double perf_vector_add = (flops_vector_add / 1e9) / (time_vector_add / 1000.0);
-    double intensity_vector_add = flops_vector_add / bytes_vector_add;
-    
-    RooflineAnalyzer::KernelMetrics metrics1 = {
-        flops_vector_add, bytes_vector_add, time_vector_add, perf_vector_add, intensity_vector_add
-    };
-    
-    RooflineAnalyzer::analyze_kernel(metrics1, peak_bandwidth_GB_s, peak_compute_GFLOPs);
-    
-    // Example 2: Polynomial Evaluation (Compute-bound)
-    printf("2. Polynomial Evaluation (Compute-bound example):\n");
-    printf("   Operation: High-degree polynomial evaluation\n");
-    printf("   FLOPs per element: 8\n");
-    printf("   Bytes per element: 8 (2 arrays * 4 bytes)\n");
-    printf("   Operational intensity: 8/8 = 1.0 FLOP/Byte\n");
-    
-    float time_poly = measure_kernel_time(polynomial_eval, d_a, d_result, N);
-    
-    double flops_poly = N * 8;  // 8 FLOPs per element
-    double bytes_poly = 2 * N * sizeof(float);  // 2 arrays accessed
-    double perf_poly = (flops_poly / 1e9) / (time_poly / 1000.0);
-    double intensity_poly = flops_poly / bytes_poly;
-    
-    RooflineAnalyzer::KernelMetrics metrics2 = {
-        flops_poly, bytes_poly, time_poly, perf_poly, intensity_poly
-    };
-    
-    RooflineAnalyzer::analyze_kernel(metrics2, peak_bandwidth_GB_s, peak_compute_GFLOPs);
-    
-    // Example 3: Matrix Multiplication (Balanced)
-    printf("3. Matrix Multiplication (Balanced example):\n");
-    printf("   Operation: C = A * B (512x512 matrices)\n");
-    printf("   FLOPs: N^3 * 2 = 512^3 * 2 ≈ 268M FLOPs\n");
-    printf("   Bytes: N^2 * 3 * 4 = 512^2 * 3 * 4 ≈ 3MB\n");
-    printf("   Operational intensity: 268M/3M ≈ 85 FLOP/Byte\n");
-    
-    float time_matmul = measure_matmul_time(d_A, d_B, d_C, MAT_SIZE);
-    
-    double flops_matmul = (double)MAT_SIZE * MAT_SIZE * MAT_SIZE * 2;  // N^3 * 2 FLOPs
-    double bytes_matmul = (double)MAT_SIZE * MAT_SIZE * 3 * sizeof(float);  // 3 matrices
-    double perf_matmul = (flops_matmul / 1e9) / (time_matmul / 1000.0);
-    double intensity_matmul = flops_matmul / bytes_matmul;
-    
-    RooflineAnalyzer::KernelMetrics metrics3 = {
-        flops_matmul, bytes_matmul, time_matmul, perf_matmul, intensity_matmul
-    };
-    
-    RooflineAnalyzer::analyze_kernel(metrics3, peak_bandwidth_GB_s, peak_compute_GFLOPs);
-    
-    // Example 4: SAXPY (Moderately compute-intensive)
-    printf("4. SAXPY (Moderately compute-intensive example):\n");
-    printf("   Operation: y[i] = alpha * x[i] + y[i]\n");
-    printf("   FLOPs per element: 2\n");
-    printf("   Bytes per element: 8 (2 arrays * 4 bytes)\n");
-    printf("   Operational intensity: 2/8 = 0.25 FLOP/Byte\n");
-    
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    
-    cudaEventRecord(start);
-    saxpy<<<(N + 255) / 256, 256>>>(2.0f, d_a, d_b, N);
-    cudaDeviceSynchronize();
-    cudaEventRecord(stop);
-    
-    cudaEventSynchronize(stop);
-    float time_saxpy = 0;
-    cudaEventElapsedTime(&time_saxpy, start, stop);
-    
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
-    
-    double flops_saxpy = N * 2;  // 2 FLOPs per element
-    double bytes_saxpy = 2 * N * sizeof(float);  // 2 arrays accessed
-    double perf_saxpy = (flops_saxpy / 1e9) / (time_saxpy / 1000.0);
-    double intensity_saxpy = flops_saxpy / bytes_saxpy;
-    
-    RooflineAnalyzer::KernelMetrics metrics4 = {
-        flops_saxpy, bytes_saxpy, time_saxpy, perf_saxpy, intensity_saxpy
-    };
-    
-    RooflineAnalyzer::analyze_kernel(metrics4, peak_bandwidth_GB_s, peak_compute_GFLOPs);
-    
-    // Summary
-    printf("Summary:\n");
-    printf("- Vector Add: Memory-bound (low operational intensity)\n");
-    printf("- Polynomial: Compute-bound (high operational intensity)\n");
-    printf("- Matrix Mult: Compute-bound (very high operational intensity)\n");
-    printf("- SAXPY: Moderately compute-bound\n");
-    printf("\nThe roofline model helps identify whether a kernel is limited by memory bandwidth or compute capacity.\n");
-    printf("This guides optimization strategies: memory-bound kernels need better access patterns,\n");
-    printf("while compute-bound kernels need more efficient computation.\n");
-    
+    analyzer.analyze_kernel("Stream Triad", flops_stream, bytes_stream, time_stream);
+
+    // Example 5: Roofline visualization concepts
+    printf("5. Roofline Model Concepts:\n");
+    printf("   The roofline model plots performance vs operational intensity\n");
+    printf("   - X-axis: Operational Intensity (FLOPs/byte)\n");
+    printf("   - Y-axis: Performance (GFLOPS)\n");
+    printf("   - Sloped region: Memory-bound (limited by bandwidth)\n");
+    printf("   - Flat region: Compute-bound (limited by compute power)\n");
+    printf("   - Distance from roof = optimization opportunity\n\n");
+
+    printf("Key Insights:\n");
+    printf("- Memory-bound kernels: Improve data reuse, access patterns\n");
+    printf("- Compute-bound kernels: Optimize arithmetic, use specialized units\n");
+    printf("- Roofline shows theoretical performance limits\n");
+    printf("- Use to prioritize optimization efforts\n");
+
     // Cleanup
-    free(h_a);
-    free(h_b);
-    free(h_c);
-    free(h_result);
     free(h_A);
     free(h_B);
     free(h_C);
-    
-    cudaFree(d_a);
-    cudaFree(d_b);
-    cudaFree(d_c);
-    cudaFree(d_result);
+    free(h_input);
+    free(h_output);
+    free(h_mat_A);
+    free(h_mat_B);
+    free(h_mat_C);
+
     cudaFree(d_A);
     cudaFree(d_B);
     cudaFree(d_C);
-    
+    cudaFree(d_input);
+    cudaFree(d_output);
+    cudaFree(d_mat_A);
+    cudaFree(d_mat_B);
+    cudaFree(d_mat_C);
+
     printf("\nTutorial completed!\n");
     return 0;
 }

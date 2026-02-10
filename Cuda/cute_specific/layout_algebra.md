@@ -1,242 +1,239 @@
-# Layout Algebra
+# CuTe Layout Algebra
 
 ## Concept Overview
 
-CuTe (CUDA Templates) represents multi-dimensional data layouts as algebraic structures that map logical coordinates to memory addresses. This abstraction allows for automatic handling of complex tiling, padding, and transposition patterns without manual index arithmetic, making GPU programming more expressive and less error-prone.
+CuTe (CUDA Template) represents multi-dimensional data layouts as algebraic structures that map logical coordinates to memory addresses. This abstraction allows for automatic handling of complex tiling, padding, and transposition patterns without manual index arithmetic. Layout algebra enables mathematical operations on memory layouts, making it easier to express complex data transformations.
 
-## Understanding Layout Algebra
+## Understanding Layouts in CuTe
 
 ### What is a Layout?
+- A mapping from logical indices to linear memory offsets
+- Represents how multi-dimensional data is arranged in memory
+- Enables algebraic operations on memory arrangements
+- Abstracts away complex indexing calculations
 
-In CuTe, a layout is a mathematical mapping that defines how logical coordinates map to physical memory addresses:
-
+### Layout Representation
 ```
-layout(logical_coord) → memory_address
+Layout(logical_shape) -> physical_offset
 ```
 
-This allows expressing complex memory access patterns algebraically rather than through manual index calculations.
+## Basic Layout Concepts
 
-### Basic Layout Types
-
-#### Identity Layout
+### 1. Identity Layout
 ```cpp
-#include "cutlass/cute/layout.hpp"
+#include <cute/layout.hpp>
 using namespace cute;
 
-// 1D identity layout: layout(i) = i
-auto identity_1d = make_layout(make_shape(Int<10>{}));  // Maps 0-9 to addresses 0-9
+// 1D identity layout: [0, 1, 2, 3, ...]
+auto identity_1d = make_layout(Int<8>{});  // Maps i -> i
+// Result: [0, 1, 2, 3, 4, 5, 6, 7]
 
-// 2D identity layout: layout(i,j) = i*cols + j
-auto identity_2d = make_layout(make_shape(Int<4>{}, Int<5>{}));  // 4x5 matrix
+// 2D identity layout: row-major order
+auto identity_2d = make_layout(make_shape(Int<4>{}, Int<3>{}));  // 4x3 matrix
+// Maps (i,j) -> i*3 + j
 ```
 
-#### Stride Layout
+### 2. Stride Layout
 ```cpp
-// Custom stride layout
-auto custom_layout = make_layout(make_shape(Int<4>{}, Int<5>{}),
-                                make_stride(Int<1>{}, Int<8>{}));  // Row-major with stride 8 for columns
+// Custom strides for specific memory layouts
+auto custom_stride = make_layout(make_shape(Int<4>{}, Int<3>{}),
+                                make_stride(Int<1>{}, Int<8>{}));  // Column-major
+// Maps (i,j) -> i*1 + j*8
 ```
 
-## Layout Composition
-
-### Product Layouts (Tiling)
-Product layouts combine multiple sub-layouts to create hierarchical structures:
-
+### 3. Composition of Layouts
 ```cpp
-// Create a 2D layout as a product of 1D layouts
-auto shape_2d = make_shape(Int<4>{}, Int<6>{});  // 4x6 matrix
-auto layout_2d = make_layout(shape_2d);          // Row-major layout
-
-// Tiled layout: divide 4x6 into 2x2 tiles
-auto tile_shape = make_shape(Int<2>{}, Int<3>{});  // Each tile is 2x3
-auto tiled_layout = tile(layout_2d, tile_shape);
-
-// This creates a layout where:
-// - Outer dimensions represent tile indices
-// - Inner dimensions represent positions within tiles
-```
-
-### Layout Transformations
-```cpp
-// Transpose transformation
-auto original_layout = make_layout(make_shape(Int<4>{}, Int<5>{}));
-auto transposed_layout = composition(original_layout, make_shape(_5{}, _4{}));  // 5x4 transposed
-
-// Swizzle transformation (for avoiding bank conflicts)
-auto base_layout = make_layout(make_shape(Int<32>{}, Int<32>{}));
-auto swizzled_layout = transform_layout(base_layout, make_offset_transform(swizzle_fn));
-```
-
-## Practical Layout Examples
-
-### Matrix Layouts
-```cpp
-#include "cutlass/cute/layout.hpp"
-using namespace cute;
-
-// Standard row-major matrix layout
-template<int M, int N>
-auto make_rowmajor_matrix_layout() {
-    return make_layout(make_shape(Int<M>{}, Int<N>{}),
-                       make_stride(Int<1>{}, Int<M>{}));  // stride_col = M, stride_row = 1
-}
-
-// Standard column-major matrix layout
-template<int M, int N>
-auto make_colmajor_matrix_layout() {
-    return make_layout(make_shape(Int<M>{}, Int<N>{}),
-                       make_stride(Int<N>{}, Int<1>{}));  // stride_row = N, stride_col = 1
-}
-
-// Example usage
-auto A_layout = make_rowmajor_matrix_layout<128, 256>();
-auto B_layout = make_colmajor_matrix_layout<256, 512>();
-```
-
-### Tiled Matrix Layouts
-```cpp
-// Create a tiled layout for matrix multiplication
-template<int M, int N, int K, int TM, int TN, int TK>
-auto make_tiled_gemm_layouts() {
-    // Original matrix dimensions
-    auto A_shape = make_shape(Int<M>{}, Int<K>{});
-    auto B_shape = make_shape(Int<K>{}, Int<N>{});
-    auto C_shape = make_shape(Int<M>{}, Int<N>{});
-    
-    // Tile dimensions
-    auto tile_A = make_shape(Int<TM>{}, Int<TK>{});
-    auto tile_B = make_shape(Int<TK>{}, Int<TN>{});
-    auto tile_C = make_shape(Int<TM>{}, Int<TN>{});
-    
-    // Create layouts
-    auto A_layout = make_layout(A_shape, make_stride(_1{}, _M{}));  // Row-major A
-    auto B_layout = make_layout(B_shape, make_stride(_N{}, _1{}));  // Col-major B
-    auto C_layout = make_layout(C_shape, make_stride(_1{}, _M{}));  // Row-major C
-    
-    // Create tiled versions
-    auto A_tiled = tile(A_layout, tile_A);
-    auto B_tiled = tile(B_layout, tile_B);
-    auto C_tiled = tile(C_layout, tile_C);
-    
-    return make_tuple(A_tiled, B_tiled, C_tiled);
-}
-```
-
-## Layout Operations
-
-### Layout Composition
-```cpp
-// Compose layouts to create complex mappings
-auto outer_shape = make_shape(Int<4>{}, Int<4>{});   // 4x4 tiles
-auto inner_shape = make_shape(Int<8>{}, Int<8>{});   // 8x8 elements per tile
-auto composite_shape = make_shape(outer_shape, inner_shape);  // 32x32 total
-
-// Create the composite layout
-auto composite_layout = make_layout(composite_shape);
-```
-
-### Layout Access
-```cpp
-// Access elements using the layout
-auto layout = make_layout(make_shape(Int<4>{}, Int<5>{}));
-auto coord = make_coord(2, 3);  // Access element at (2,3)
-
-// Get the memory address for this coordinate
-int address = layout(coord);  // Returns 2*5 + 3 = 13
-```
-
-## Advanced Layout Concepts
-
-### Layout Swizzling
-```cpp
-// Swizzling to avoid bank conflicts
-auto base_layout = make_layout(make_shape(Int<32>{}, Int<32>{}));
-
-// Define a swizzling function
-auto swizzle_fn = [](int row, int col) {
-    // Simple XOR swizzling to distribute across banks
-    int swizzled_col = col ^ (row & 0x7);  // XOR with lower 3 bits of row
-    return make_coord(row, swizzled_col);
-};
-
-// Apply swizzling transformation
-auto swizzled_layout = transform_layout(base_layout, swizzle_fn);
-```
-
-### Layout Padding
-```cpp
-// Add padding to avoid bank conflicts
-auto unpadded_layout = make_layout(make_shape(Int<32>{}, Int<32>{}));
-auto padded_layout = make_layout(make_shape(Int<32>{}, Int<33>{}));  // +1 padding to avoid conflicts
+// Product layout: combines multiple layouts
+auto layout_A = make_layout(Int<4>{});
+auto layout_B = make_layout(Int<3>{});
+auto product_layout = make_layout(make_shape(layout_A, layout_B));
+// Creates a 2D layout combining both 1D layouts
 ```
 
 ## Layout Algebra Operations
 
-### Layout Concatenation
+### 1. Product (Cartesian Product)
 ```cpp
-// Concatenate layouts along an axis
-auto layout_a = make_layout(make_shape(Int<4>{}, Int<5>{}));
-auto layout_b = make_layout(make_shape(Int<4>{}, Int<3>{}));
-
-// Concatenate along the second dimension: 4x(5+3) = 4x8
-auto concatenated = append<1>(layout_a, layout_b);
+// Combines two layouts into a higher-dimensional layout
+auto rows = make_layout(Int<4>{});  // 4 rows
+auto cols = make_layout(Int<3>{});  // 3 columns
+auto matrix_layout = make_layout(make_shape(rows, cols));
+// Creates a 4x3 matrix layout
 ```
 
-### Layout Splitting
+### 2. Composition (Function Composition)
 ```cpp
-// Split a layout into parts
-auto big_layout = make_layout(make_shape(Int<8>{}, Int<12>{}));
-
-// Split into 4x6 and 4x6 along the first dimension
-auto [top, bottom] = split<0>(big_layout, Int<4>{});
-
-// Split into 8x5 and 8x7 along the second dimension
-auto [left, right] = split<1>(big_layout, Int<5>{});
+// Applies one layout to the result of another
+auto inner_layout = make_layout(make_shape(Int<2>{}, Int<2>{}));  // 2x2 tiles
+auto outer_layout = make_layout(Int<3>{});  // 3 tile repetitions
+auto composed_layout = compose(inner_layout, outer_layout);
 ```
 
-## Integration with Memory Operations
-
-### Using Layouts with Copy Operations
+### 3. Transformations
 ```cpp
-// Layout-aware copy operations
-template<class SrcLayout, class DstLayout>
-__device__ void layout_copy(float const* src, float* dst, 
-                           SrcLayout const& src_layout, DstLayout const& dst_layout) {
-    // Iterate through the layout space
-    for (int i = 0; i < size(src_layout); ++i) {
-        auto coord = idx2crd(i, src_layout.shape());  // Convert linear index to coordinate
-        int src_addr = src_layout(coord);
-        int dst_addr = dst_layout(coord);  // Same logical coordinate, different layout
-        dst[dst_addr] = src[src_addr];
-    }
+// Transpose transformation
+auto original = make_layout(make_shape(Int<4>{}, Int<3>{}));  // 4x3
+auto transposed = right_inverse(original);  // 3x4 transposed
+
+// Swizzle transformation
+auto swizzled = make_layout(make_shape(Int<4>{}, Int<4>{}),
+                          GenRowMajor{});  // Row-major with swizzling
+```
+
+## Practical Layout Examples
+
+### 1. Matrix Layouts
+```cpp
+#include <cute/layout.hpp>
+using namespace cute;
+
+// Standard row-major matrix
+auto matrix_layout = make_layout(make_shape(Int<64>{}, Int<64>{}));  // 64x64 matrix
+// Maps (row, col) -> row * 64 + col
+
+// Tiled matrix layout
+auto tile_shape = make_shape(Int<16>{}, Int<16>{});  // 16x16 tiles
+auto grid_shape = make_shape(Int<4>{}, Int<4>{});    // 4x4 grid of tiles
+auto tiled_layout = make_layout(make_shape(tile_shape, grid_shape));
+```
+
+### 2. Batched Operations
+```cpp
+// Layout for batched matrix operations
+auto matrix = make_layout(make_shape(Int<32>{}, Int<32>{}));  // 32x32 matrices
+auto batch = make_layout(Int<16>{});  // 16 batches
+auto batched_layout = make_layout(make_shape(batch, matrix));
+// Maps (batch, row, col) -> batch * (32*32) + row * 32 + col
+```
+
+### 3. Padding and Striding
+```cpp
+// Layout with padding
+auto unpadded = make_layout(make_shape(Int<4>{}, Int<4>{}));  // 4x4
+auto padded_shape = make_shape(Int<6>{}, Int<6>{});  // 6x6 with padding
+auto padded_layout = make_layout(padded_shape, GenRowMajor{});
+
+// Strided access
+auto base_layout = make_layout(make_shape(Int<16>{}, Int<16>{}));
+auto strided_layout = make_layout(base_layout.shape(),
+                                 make_stride(Int<2>{}, Int<32>{}));  // Every 2nd row, every 32nd col
+```
+
+## Layout Manipulation Functions
+
+### 1. Size and Shape Queries
+```cpp
+auto layout = make_layout(make_shape(Int<4>{}, Int<3>{}));
+int total_elements = size(layout);        // 12
+auto shape = layout.shape();              // (4, 3)
+auto stride = layout.stride();            // (3, 1) for row-major
+```
+
+### 2. Indexing Operations
+```cpp
+auto layout = make_layout(make_shape(Int<4>{}, Int<3>{}));
+auto coord = make_coord(2, 1);            // (row=2, col=1)
+int offset = layout(coord);               // Returns 2*3 + 1 = 7
+```
+
+### 3. Sub-Layout Extraction
+```cpp
+auto big_layout = make_layout(make_shape(Int<8>{}, Int<6>{}));
+// Extract a 4x3 sub-matrix starting at (2,1)
+auto sub_layout = composition(big_layout, make_coord(2, 1), make_shape(Int<4>{}, Int<3>{}));
+```
+
+## Advanced Layout Concepts
+
+### 1. Partitioning
+```cpp
+// Partition a layout into smaller chunks
+auto big_matrix = make_layout(make_shape(Int<128>{}, Int<128>{}));
+auto tile = make_shape(Int<32>{}, Int<32>{});
+auto partitions = zipped_divide(big_matrix, tile);
+// Divides the 128x128 matrix into 4x4 grid of 32x32 tiles
+```
+
+### 2. Swizzling for Bank Conflict Avoidance
+```cpp
+// Layout that avoids shared memory bank conflicts
+auto base_layout = make_layout(make_shape(Int<32>{}, Int<32>{}));
+// Apply swizzling transformation to avoid bank conflicts
+auto swizzled_layout = make_layout(base_layout.shape(),
+                                  GenRowMajorSwizzle<4>{});  // 4-way swizzling
+```
+
+### 3. Memory Hierarchy Matching
+```cpp
+// Layout that matches GPU memory hierarchy
+auto register_layout = make_layout(Int<8>{});                    // Register-level
+auto warp_layout = make_layout(make_shape(Int<8>{}, Int<4>{}));  // 4 threads, 8 elements each
+auto block_layout = make_layout(make_shape(warp_layout, Int<8>{})); // 8 warps per block
+```
+
+## Layout Algebra in Practice
+
+### Example: Matrix Multiplication Layout
+```cpp
+// Define layouts for matrix multiplication: C = A * B
+// A: MxK, B: KxN, C: MxN
+
+template<int M, int N, int K>
+auto make_gemm_layouts() {
+    // Layout for A (MxK)
+    auto layout_A = make_layout(make_shape(Int<M>{}, Int<K>{}));
+    
+    // Layout for B (KxN) 
+    auto layout_B = make_layout(make_shape(Int<K>{}, Int<N>{}));
+    
+    // Layout for C (MxN)
+    auto layout_C = make_layout(make_shape(Int<M>{}, Int<N>{}));
+    
+    return make_tuple(layout_A, layout_B, layout_C);
+}
+```
+
+### Example: Tiled Matrix Layout
+```cpp
+template<int TileM, int TileN, int NumTilesM, int NumTilesN>
+auto make_tiled_layout() {
+    // Define tile shape
+    auto tile_shape = make_shape(Int<TileM>{}, Int<TileN>{});
+    
+    // Define grid shape
+    auto grid_shape = make_shape(Int<NumTilesM>{}, Int<NumTilesN>{});
+    
+    // Create tiled layout: (tile, grid) -> memory
+    auto tiled_layout = make_layout(make_shape(tile_shape, grid_shape));
+    
+    return tiled_layout;
 }
 ```
 
 ## Benefits of Layout Algebra
 
 ### 1. Abstraction
-- Separates logical data organization from physical memory layout
-- Enables algorithmic thinking without low-level indexing concerns
+- Hides complex indexing calculations
+- Makes code more readable and maintainable
+- Separates algorithm from data layout concerns
 
-### 2. Composability
-- Complex layouts built from simple components
-- Easy to experiment with different tiling strategies
+### 2. Optimization
+- Enables automatic optimization of memory access patterns
+- Facilitates tiling and blocking optimizations
+- Supports various memory hierarchy levels
 
-### 3. Verification
-- Mathematical properties can be verified at compile time
-- Less prone to indexing errors
-
-### 4. Optimization
-- Compiler can optimize layout operations
-- Automatic generation of efficient address calculations
+### 3. Flexibility
+- Easy to experiment with different data layouts
+- Supports runtime layout modifications
+- Compatible with various algorithm implementations
 
 ## Expected Knowledge Outcome
 
 After mastering this concept, you should be able to:
 - Understand CuTe's abstraction for expressing memory layouts algebraically
-- Create and manipulate complex layouts using layout algebra operations
-- Apply layout transformations for optimization purposes
-- Design efficient memory access patterns using algebraic representations
+- Create and manipulate various layout types for different data arrangements
+- Apply layout transformations to optimize memory access patterns
+- Design layouts that match the GPU memory hierarchy for optimal performance
 
 ## Hands-on Tutorial
 

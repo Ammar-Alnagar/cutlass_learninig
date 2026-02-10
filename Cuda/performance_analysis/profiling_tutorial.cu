@@ -1,248 +1,304 @@
 /*
- * Profiling with Nsight Compute Tutorial
- * 
- * This tutorial demonstrates how to profile CUDA applications using Nsight Compute.
+ * CUDA Profiling with Nsight Compute Tutorial
+ *
+ * This tutorial demonstrates how to profile CUDA kernels using Nsight Compute.
  */
 
 #include <cuda_runtime.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <chrono>
 
-// Kernel 1: Low occupancy example
-__global__ void low_occupancy_kernel(float* data, int n) {
-    // Use many registers to reduce occupancy
-    float r0 = data[threadIdx.x + blockIdx.x * blockDim.x];
-    float r1 = r0 * 1.1f; float r2 = r1 * 1.1f; float r3 = r2 * 1.1f;
-    float r4 = r3 * 1.1f; float r5 = r4 * 1.1f; float r6 = r5 * 1.1f;
-    float r7 = r6 * 1.1f; float r8 = r7 * 1.1f; float r9 = r8 * 1.1f;
-    float r10 = r9 * 1.1f; float r11 = r10 * 1.1f; float r12 = r11 * 1.1f;
-    float r13 = r12 * 1.1f; float r14 = r13 * 1.1f; float r15 = r14 * 1.1f;
-    float r16 = r15 * 1.1f; float r17 = r16 * 1.1f; float r18 = r17 * 1.1f;
-    float r19 = r18 * 1.1f; float r20 = r19 * 1.1f; float r21 = r20 * 1.1f;
-    float r22 = r21 * 1.1f; float r23 = r22 * 1.1f; float r24 = r23 * 1.1f;
-    float r25 = r24 * 1.1f; float r26 = r25 * 1.1f; float r27 = r26 * 1.1f;
-    float r28 = r27 * 1.1f; float r29 = r28 * 1.1f; float r30 = r29 * 1.1f;
-    
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+// Kernel 1: Memory-bound example for profiling
+__global__ void memory_bound_kernel(float* input, float* output, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
-        data[idx] = r0 + r1 + r2 + r3 + r4 + r5 + r6 + r7 + r8 + r9 +
-                    r10 + r11 + r12 + r13 + r14 + r15 + r16 + r17 + r18 + r19 +
-                    r20 + r21 + r22 + r23 + r24 + r25 + r26 + r27 + r28 + r29 + r30;
+        // Simple operation with lots of memory access
+        output[idx] = input[idx] * 2.0f + 1.0f;
     }
 }
 
-// Kernel 2: High occupancy example
-__global__ void high_occupancy_kernel(float* data, int n) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx < n) {
-        data[idx] = data[idx] * 2.0f + 1.0f;
-    }
-}
-
-// Kernel 3: Memory-bound example (uncoalesced access)
-__global__ void uncoalesced_kernel(float* input, float* output, int n) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx < n) {
-        // Uncoalesced access pattern: stride of 32
-        int access_idx = (idx * 32) % n;
-        output[idx] = input[access_idx] * 2.0f;
-    }
-}
-
-// Kernel 4: Compute-bound example
+// Kernel 2: Compute-bound example for profiling
 __global__ void compute_bound_kernel(float* input, float* output, int n) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
-        float val = input[idx];
-        // Perform many computations per memory access
-        for (int i = 0; i < 100; i++) {
-            val = val * 1.01f + 0.01f;
-            val = val * val + 0.001f;
+        float x = input[idx];
+        
+        // Many operations per memory access
+        for (int i = 0; i < 50; i++) {
+            x = x * x + 0.1f;
+            x = sqrtf(x);
+            x = x * 2.0f + 1.0f;
         }
-        output[idx] = val;
+        
+        output[idx] = x;
     }
 }
 
-// Kernel 5: Example with shared memory bank conflicts
-__global__ void bank_conflict_kernel(float* input, float* output, int n) {
-    __shared__ float sdata[1024];
+// Kernel 3: Example with shared memory for profiling
+__global__ void shared_memory_kernel(float* input, float* output, int n) {
+    extern __shared__ float sdata[];
     
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    int local_tid = threadIdx.x;
+    int tid = threadIdx.x;
+    int gid = blockIdx.x * blockDim.x + threadIdx.x;
     
-    if (tid < n) {
-        // Load to shared memory
-        sdata[local_tid] = input[tid];
-        __syncthreads();
-        
-        // Create bank conflicts by accessing same bank from multiple threads
-        // Every 32nd thread accesses the same bank
-        float sum = 0.0f;
-        for (int i = 0; i < 32; i++) {
-            sum += sdata[local_tid % 32];  // All threads access same bank
-        }
-        
-        output[tid] = sum;
+    // Load data cooperatively
+    if (gid < n) {
+        sdata[tid] = input[gid];
+    } else {
+        sdata[tid] = 0.0f;
+    }
+    
+    __syncthreads();  // Synchronize after loading
+    
+    // Process data in shared memory
+    float result = sdata[tid];
+    if (tid > 0) {
+        result += sdata[tid - 1];  // Use neighbor's data
+    }
+    
+    __syncthreads();  // Synchronize before storing
+    
+    if (gid < n) {
+        output[gid] = result;
     }
 }
 
-// Function to print occupancy information
-void print_occupancy_info(const char* kernel_name, void (*kernel)(float*, int)) {
-    int min_grid_size, block_size;
-    cudaOccupancyMaxPotentialBlockSize(&min_grid_size, &block_size, (const void*)kernel, 0, 0);
+// Kernel 4: Uncoalesced access pattern for profiling
+__global__ void uncoalesced_kernel(float* input, float* output, int n, int stride) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        // Uncoalesced access pattern - stride access
+        int access_idx = idx * stride;
+        if (access_idx < n * stride) {
+            output[idx] = input[access_idx] * 2.0f;
+        }
+    }
+}
+
+// Kernel 5: High occupancy vs low occupancy comparison
+__global__ void high_occupancy_kernel(float* input, float* output, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        // Simple operation with minimal register usage
+        output[idx] = input[idx] * 2.0f;
+    }
+}
+
+// Kernel 6: Low occupancy kernel (high register usage)
+__global__ void low_occupancy_kernel(float* input, float* output, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        // Use many registers to reduce occupancy
+        float a = input[idx];
+        float b = a * 2.0f;
+        float c = b + 1.0f;
+        float d = c * a;
+        float e = d - b;
+        float f = e * 0.5f;
+        float g = f + a;
+        float h = g * b;
+        float i = h - c;
+        float j = i * d;
+        float k = j + e;
+        float l = k * f;
+        
+        output[idx] = a + b + c + d + e + f + g + h + i + j + k + l;
+    }
+}
+
+// Helper function to measure execution time
+float measureKernelTime(void (*kernel)(float*, float*, int), float* input, float* output, int n, size_t sharedMemSize = 0) {
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
+    if (sharedMemSize > 0) {
+        kernel<<<(n + 255) / 256, 256, sharedMemSize>>>(input, output, n);
+    } else {
+        kernel<<<(n + 255) / 256, 256>>>(input, output, n);
+    }
+    cudaDeviceSynchronize();
+    cudaEventRecord(stop);
+
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
+    return milliseconds / 1000.0f;  // Return seconds
+}
+
+// Function to print profiling guidance
+void printProfilingGuidance() {
+    printf("\nNsight Compute Profiling Guidance:\n");
+    printf("=========================\n");
+    printf("To profile these kernels with Nsight Compute, use commands like:\n\n");
     
-    int active_blocks;
-    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&active_blocks, (const void*)kernel, block_size, 0);
+    printf("Basic profiling:\n");
+    printf("  ncu ./profiling_tutorial\n\n");
     
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
+    printf("Profile specific metrics:\n");
+    printf("  ncu --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,gmem__throughput.avg.pct_of_peak_sustained_elapsed ./profiling_tutorial\n\n");
     
-    int max_blocks = prop.maxThreadsPerMultiProcessor / block_size;
-    float occupancy = (float)active_blocks / max_blocks;
+    printf("Profile with source correlation:\n");
+    printf("  ncu --source ./profiling_tutorial\n\n");
     
-    printf("%s:\n", kernel_name);
-    printf("  Block size: %d\n", block_size);
-    printf("  Active blocks per SM: %d\n", active_blocks);
-    printf("  Max possible blocks per SM: %d\n", max_blocks);
-    printf("  Occupancy: %.2f%%\n", occupancy * 100);
+    printf("Profile specific kernel:\n");
+    printf("  ncu --kernel-name \"memory_bound_kernel\" ./profiling_tutorial\n\n");
     
-    struct cudaFuncAttributes attr;
-    cudaFuncGetAttributes(&attr, (const void*)kernel);
-    printf("  Registers per thread: %d\n", attr.numRegs);
-    printf("  Shared memory per block: %zu bytes\n", attr.sharedSizeBytes);
-    printf("\n");
+    printf("Advanced metrics for memory analysis:\n");
+    printf("  ncu --metrics gld_efficiency,gst_efficiency,achieved_occupancy,sm__warps_launched_rate.avg ./profiling_tutorial\n\n");
+    
+    printf("Key metrics to monitor:\n");
+    printf("- sm__throughput.avg.pct_of_peak_sustained_elapsed: SM utilization\n");
+    printf("- gmem__throughput.avg.pct_of_peak_sustained_elapsed: Global memory utilization\n");
+    printf("- achieved_occupancy: Thread occupancy\n");
+    printf("- gld_efficiency/gst_efficiency: Memory access efficiency\n");
+    printf("- dram__bytes_per_second.sum: Memory bandwidth\n");
+    printf("- smsp__warp_issue_stalled_*: Warp stall reasons\n\n");
 }
 
 int main() {
-    printf("=== Profiling with Nsight Compute Tutorial ===\n\n");
-    
+    printf("=== CUDA Profiling with Nsight Compute Tutorial ===\n\n");
+
     const int N = 1024 * 1024;  // 1M elements
     size_t size = N * sizeof(float);
-    
+
     // Allocate host memory
-    float *h_data1, *h_data2, *h_data3, *h_data4, *h_data5;
-    h_data1 = (float*)malloc(size);
-    h_data2 = (float*)malloc(size);
-    h_data3 = (float*)malloc(size);
-    h_data4 = (float*)malloc(size);
-    h_data5 = (float*)malloc(size);
-    
-    // Initialize data
+    float *h_input, *h_output1, *h_output2, *h_output3, *h_output4, *h_output5, *h_output6;
+    h_input = (float*)malloc(size);
+    h_output1 = (float*)malloc(size);
+    h_output2 = (float*)malloc(size);
+    h_output3 = (float*)malloc(size);
+    h_output4 = (float*)malloc(size);
+    h_output5 = (float*)malloc(size);
+    h_output6 = (float*)malloc(size);
+
+    // Initialize input data
     for (int i = 0; i < N; i++) {
-        h_data1[i] = i * 1.0f;
-        h_data2[i] = i * 1.0f;
-        h_data3[i] = i * 1.0f;
-        h_data4[i] = i * 1.0f;
-        h_data5[i] = i * 1.0f;
+        h_input[i] = i * 1.0f;
     }
-    
+
     // Allocate device memory
-    float *d_data1, *d_data2, *d_data3, *d_data4, *d_data5;
-    cudaMalloc(&d_data1, size);
-    cudaMalloc(&d_data2, size);
-    cudaMalloc(&d_data3, size);
-    cudaMalloc(&d_data4, size);
-    cudaMalloc(&d_data5, size);
-    
-    // Copy data to device
-    cudaMemcpy(d_data1, h_data1, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_data2, h_data2, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_data3, h_data3, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_data4, h_data4, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_data5, h_data5, size, cudaMemcpyHostToDevice);
-    
-    // Print occupancy information for different kernels
-    printf("Occupancy Analysis:\n");
-    print_occupancy_info("Low Occupancy Kernel", (void (*)(float*, int))low_occupancy_kernel);
-    print_occupancy_info("High Occupancy Kernel", (void (*)(float*, int))high_occupancy_kernel);
-    
-    // Run kernels
-    printf("Running kernels for profiling...\n\n");
-    
-    // Example 1: Low occupancy kernel
-    printf("1. Low Occupancy Kernel:\n");
-    printf("   This kernel uses many registers, reducing occupancy.\n");
-    low_occupancy_kernel<<<(N + 255) / 256, 256>>>(d_data1, N);
-    cudaDeviceSynchronize();
-    printf("   Completed.\n\n");
-    
-    // Example 2: High occupancy kernel
-    printf("2. High Occupancy Kernel:\n");
-    printf("   This kernel uses few registers, allowing high occupancy.\n");
-    high_occupancy_kernel<<<(N + 255) / 256, 256>>>(d_data2, N);
-    cudaDeviceSynchronize();
-    printf("   Completed.\n\n");
-    
-    // Example 3: Uncoalesced memory access
-    printf("3. Uncoalesced Memory Access Kernel:\n");
-    printf("   This kernel demonstrates poor memory access patterns.\n");
-    uncoalesced_kernel<<<(N + 255) / 256, 256>>>(d_data3, d_data3, N);
-    cudaDeviceSynchronize();
-    printf("   Completed.\n\n");
-    
-    // Example 4: Compute-bound kernel
-    printf("4. Compute-Bound Kernel:\n");
-    printf("   This kernel performs many computations per memory access.\n");
-    compute_bound_kernel<<<(N + 255) / 256, 256>>>(d_data4, d_data4, N);
-    cudaDeviceSynchronize();
-    printf("   Completed.\n\n");
-    
-    // Example 5: Bank conflict kernel
-    printf("5. Shared Memory Bank Conflict Kernel:\n");
-    printf("   This kernel demonstrates shared memory bank conflicts.\n");
-    bank_conflict_kernel<<<(N + 255) / 256, 256>>>(d_data5, d_data5, N);
-    cudaDeviceSynchronize();
-    printf("   Completed.\n\n");
-    
-    printf("Profiling Instructions:\n");
-    printf("=======================\n");
-    printf("To profile these kernels with Nsight Compute, use commands like:\n\n");
-    
-    printf("1. Basic profiling:\n");
-    printf("   ncu --set full ./profiling_tutorial\n\n");
-    
-    printf("2. Specific metrics:\n");
-    printf("   ncu --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,achieved_occupancy ./profiling_tutorial\n\n");
-    
-    printf("3. Memory-focused analysis:\n");
-    printf("   ncu --set memory ./profiling_tutorial\n\n");
-    
-    printf("4. Compute-focused analysis:\n");
-    printf("   ncu --set compute ./profiling_tutorial\n\n");
-    
-    printf("5. Compare different kernels:\n");
-    printf("   ncu --kernel-name \"low_occupancy_kernel\" ./profiling_tutorial\n");
-    printf("   ncu --kernel-name \"high_occupancy_kernel\" ./profiling_tutorial\n\n");
-    
-    printf("Key Metrics to Monitor:\n");
-    printf("- sm__throughput.avg.pct_of_peak_sustained_elapsed: GPU utilization\n");
-    printf("- achieved_occupancy: Thread occupancy\n");
-    printf("- dram__throughput: Memory bandwidth utilization\n");
-    printf("- gld_efficiency, gst_efficiency: Memory access efficiency\n");
-    printf("- shared_replay_overhead: Shared memory bank conflicts\n");
-    printf("- branch_efficiency: Divergent branching efficiency\n\n");
-    
-    printf("Interpreting Results:\n");
-    printf("- Low occupancy kernels: Optimize register usage\n");
-    printf("- Low memory efficiency: Improve access patterns\n");
-    printf("- High bank conflict overhead: Reorganize shared memory access\n");
-    printf("- Low branch efficiency: Reduce divergent branching\n\n");
-    
+    float *d_input, *d_output1, *d_output2, *d_output3, *d_output4, *d_output5, *d_output6;
+    cudaMalloc(&d_input, size);
+    cudaMalloc(&d_output1, size);
+    cudaMalloc(&d_output2, size);
+    cudaMalloc(&d_output3, size);
+    cudaMalloc(&d_output4, size);
+    cudaMalloc(&d_output5, size);
+    cudaMalloc(&d_output6, size);
+
+    // Copy input data to device
+    cudaMemcpy(d_input, h_input, size, cudaMemcpyHostToDevice);
+
+    // Example 1: Memory-bound kernel
+    printf("1. Memory-Bound Kernel Execution:\n");
+    float time_mem_bound = measureKernelTime(memory_bound_kernel, d_input, d_output1, N);
+    cudaMemcpy(h_output1, d_output1, size, cudaMemcpyDeviceToHost);
+    printf("   Execution time: %.6f seconds\n", time_mem_bound);
+    printf("   First 10 results: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%.1f ", h_output1[i]);
+    }
+    printf("\n\n");
+
+    // Example 2: Compute-bound kernel
+    printf("2. Compute-Bound Kernel Execution:\n");
+    float time_compute_bound = measureKernelTime(compute_bound_kernel, d_input, d_output2, N);
+    cudaMemcpy(h_output2, d_output2, size, cudaMemcpyDeviceToHost);
+    printf("   Execution time: %.6f seconds\n", time_compute_bound);
+    printf("   First 10 results: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%.1f ", h_output2[i]);
+    }
+    printf("\n\n");
+
+    // Example 3: Shared memory kernel
+    printf("3. Shared Memory Kernel Execution:\n");
+    size_t sharedMemSize = 256 * sizeof(float);  // For 256 threads
+    float time_shared = measureKernelTime(shared_memory_kernel, d_input, d_output3, N, sharedMemSize);
+    cudaMemcpy(h_output3, d_output3, size, cudaMemcpyDeviceToHost);
+    printf("   Execution time: %.6f seconds\n", time_shared);
+    printf("   First 10 results: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%.1f ", h_output3[i]);
+    }
+    printf("\n\n");
+
+    // Example 4: Uncoalesced access kernel
+    printf("4. Uncoalesced Access Kernel Execution:\n");
+    float time_uncoalesced = measureKernelTime(uncoalesced_kernel, d_input, d_output4, N/2, 2);
+    cudaMemcpy(h_output4, d_output4, size, cudaMemcpyDeviceToHost);
+    printf("   Execution time: %.6f seconds\n", time_uncoalesced);
+    printf("   First 10 results: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%.1f ", h_output4[i]);
+    }
+    printf("\n\n");
+
+    // Example 5: High occupancy kernel
+    printf("5. High Occupancy Kernel Execution:\n");
+    float time_high_occ = measureKernelTime(high_occupancy_kernel, d_input, d_output5, N);
+    cudaMemcpy(h_output5, d_output5, size, cudaMemcpyDeviceToHost);
+    printf("   Execution time: %.6f seconds\n", time_high_occ);
+    printf("   First 10 results: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%.1f ", h_output5[i]);
+    }
+    printf("\n\n");
+
+    // Example 6: Low occupancy kernel
+    printf("6. Low Occupancy Kernel Execution:\n");
+    float time_low_occ = measureKernelTime(low_occupancy_kernel, d_input, d_output6, N);
+    cudaMemcpy(h_output6, d_output6, size, cudaMemcpyDeviceToHost);
+    printf("   Execution time: %.6f seconds\n", time_low_occ);
+    printf("   First 10 results: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%.1f ", h_output6[i]);
+    }
+    printf("\n\n");
+
+    // Performance comparison
+    printf("Performance Comparison:\n");
+    printf("- Memory-bound kernel: %.6f seconds\n", time_mem_bound);
+    printf("- Compute-bound kernel: %.6f seconds\n", time_compute_bound);
+    printf("- Shared memory kernel: %.6f seconds\n", time_shared);
+    printf("- Uncoalesced access kernel: %.6f seconds\n", time_uncoalesced);
+    printf("- High occupancy kernel: %.6f seconds\n", time_high_occ);
+    printf("- Low occupancy kernel: %.6f seconds\n", time_low_occ);
+    printf("\n");
+
+    // Print profiling guidance
+    printProfilingGuidance();
+
+    printf("Key Profiling Concepts Demonstrated:\n");
+    printf("- Memory-bound vs compute-bound kernels\n");
+    printf("- Impact of shared memory on performance\n");
+    printf("- Effect of memory access patterns\n");
+    printf("- Influence of occupancy on performance\n");
+    printf("- Register pressure effects\n");
+
     // Cleanup
-    free(h_data1);
-    free(h_data2);
-    free(h_data3);
-    free(h_data4);
-    free(h_data5);
-    
-    cudaFree(d_data1);
-    cudaFree(d_data2);
-    cudaFree(d_data3);
-    cudaFree(d_data4);
-    cudaFree(d_data5);
-    
-    printf("Tutorial completed!\n");
-    printf("Run this program with Nsight Compute to analyze the performance characteristics.\n");
-    
+    free(h_input);
+    free(h_output1);
+    free(h_output2);
+    free(h_output3);
+    free(h_output4);
+    free(h_output5);
+    free(h_output6);
+
+    cudaFree(d_input);
+    cudaFree(d_output1);
+    cudaFree(d_output2);
+    cudaFree(d_output3);
+    cudaFree(d_output4);
+    cudaFree(d_output5);
+    cudaFree(d_output6);
+
+    printf("\nTutorial completed!\n");
     return 0;
 }
