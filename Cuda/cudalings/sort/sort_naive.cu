@@ -6,7 +6,6 @@
 // Naive bubble sort kernel - extremely inefficient on GPU
 __global__ void sort_naive(float *data, int n) {
     bool sorted = false;
-    int totalThreads = gridDim.x * blockDim.x;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     while (!sorted) {

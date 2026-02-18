@@ -3,6 +3,11 @@
 #include <cuda_runtime.h>
 #include <sys/time.h>
 
+// Macro to avoid shared memory bank conflicts
+#define NUM_BANKS 32
+#define LOG_NUM_BANKS 5
+#define CONFLICT_FREE_OFFSET(n) ((n) >> NUM_BANKS + (n) >> (2 * LOG_NUM_BANKS))
+
 // Naive prefix sum (scan) kernel - inefficient sequential approach
 __global__ void prefix_sum_naive(float *input, float *output, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -75,11 +80,6 @@ __global__ void prefix_sum_work_efficient(float *input, float *output, int n) {
     if (ai < n) output[ai] = temp[ai + bankOffsetA];
     if (bi < n) output[bi + blockDim.x] = temp[bi + bankOffsetB];
 }
-
-// Macro to avoid shared memory bank conflicts
-#define CONFLICT_FREE_OFFSET(n) ((n) >> NUM_BANKS + (n) >> (2 * LOG_NUM_BANKS))
-#define NUM_BANKS 32
-#define LOG_NUM_BANKS 5
 
 // Utility function to check CUDA errors
 void checkCudaError(cudaError_t error, const char* function) {

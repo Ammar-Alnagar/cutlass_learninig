@@ -86,9 +86,8 @@ int main(int argc, char **argv) {
     }
     
     printf("Attention mechanism: seq_len=%d, head_dim=%d\n", seq_len, head_dim);
-    
+
     size_t qkv_size = seq_len * head_dim * sizeof(float);
-    size_t scores_size = seq_len * seq_len * sizeof(float);
     
     // Host arrays
     float *h_Q = (float*)malloc(qkv_size);
@@ -131,14 +130,14 @@ int main(int argc, char **argv) {
     checkCudaError(cudaEventCreate(&stop_event), "cudaEventCreate");
     
     // Warm up run
-    attention_with_scores_naive<<<gridSize, blockSize>>>(d_Q, d_K, d_V, d_output, seq_len, head_dim);
+    attention_naive<<<gridSize, blockSize>>>(d_Q, d_K, d_V, d_output, seq_len, head_dim);
     cudaDeviceSynchronize();
-    
+
     // Timing the kernel execution
     gettimeofday(&start, NULL);
     cudaEventRecord(start_event);
-    
-    attention_with_scores_naive<<<gridSize, blockSize>>>(d_Q, d_K, d_V, d_output, seq_len, head_dim);
+
+    attention_naive<<<gridSize, blockSize>>>(d_Q, d_K, d_V, d_output, seq_len, head_dim);
     
     cudaEventRecord(stop_event);
     cudaEventSynchronize(stop_event);

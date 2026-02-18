@@ -69,9 +69,9 @@ int main(int argc, char **argv) {
     
     // Calculate expected result on CPU
     float cpu_result = cpu_reduction(h_input, n);
-    
+
     // Device array
-    float *d_input, *d_output;
+    float *d_input;
     checkCudaError(cudaMalloc(&d_input, input_size), "cudaMalloc d_input");
     
     // Copy data to device

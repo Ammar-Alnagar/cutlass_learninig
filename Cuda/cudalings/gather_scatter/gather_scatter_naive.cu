@@ -232,14 +232,14 @@ int main(int argc, char **argv) {
     
     if (success) {
         printf("Scatter verification PASSED (checked %d random elements)\n", num_checks);
-        
+
         // Calculate performance metrics for scatter
-        bytes_moved = n * sizeof(int) + n * sizeof(float) + input_size * sizeof(float); // indices + input + output
-        bandwidth_gbs = (bytes_moved / (1024.0 * 1024.0 * 1024.0)) / (kernel_time_ms / 1000.0);
-        
+        double bytes_moved_scatter = n * sizeof(int) + n * sizeof(float) + input_size * sizeof(float); // indices + input + output
+        double bandwidth_gbs_scatter = (bytes_moved_scatter / (1024.0 * 1024.0 * 1024.0)) / (kernel_time_ms / 1000.0);
+
         printf("Scatter - Kernel execution time: %.3f ms\n", kernel_time_ms);
         printf("Scatter - Total execution time: %.3f s\n", total_time_s);
-        printf("Scatter - Effective bandwidth: %.2f GB/s\n", bandwidth_gbs);
+        printf("Scatter - Effective bandwidth: %.2f GB/s\n", bandwidth_gbs_scatter);
         printf("Scatter - Throughput: %.2f GElements/s\n", (n / 1e9) / (kernel_time_ms / 1000.0));
     } else {
         printf("Scatter verification FAILED\n");
