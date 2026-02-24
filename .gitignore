@@ -10,6 +10,8 @@
 # Precompiled Headers
 *.gch
 *.pch
+.venv
+venv
 
 # Linker files
 *.ilk
