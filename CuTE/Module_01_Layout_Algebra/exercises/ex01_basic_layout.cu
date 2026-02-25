@@ -36,7 +36,6 @@ int main() {
   std::cout << "Task 1 - 1D Layout (16 elements):" << std::endl;
   std::cout << "TODO: Create and print a 1D layout" << std::endl;
   // TODO: Print the layout using print(layout_1d) or std::cout << layout_1d
-  print(layout_1d);
   std::cout << std::endl;
 
   // TASK 2: Create a 2D row-major layout with shape (8, 4)
@@ -45,7 +44,6 @@ int main() {
   // TODO: Uncomment and complete:
   // auto layout_2d_rm = make_layout(make_shape(Int<8>{}, Int<4>{}),
   // GenRowMajor{});
-  auto layout_2d_rm = make_layout(make_shape(Int<8>{}, INt<4>{}), GenRowMajor);
 
   std::cout << "Task 2 - 2D Row-Major Layout (8x4):" << std::endl;
   std::cout << "TODO: Create and print a 2D row-major layout" << std::endl;
@@ -59,8 +57,6 @@ int main() {
   // auto layout_2d_cm = make_layout(make_shape(Int<8>{}, Int<4>{}),
   // GenColMajor{});
 
-  auto layout_2d_cm = make_layout(make_shape(Int<8>{}, Int<4>{}), GenColMajor);
-
   std::cout << "Task 3 - 2D Column-Major Layout (8x4):" << std::endl;
   std::cout << "TODO: Create and print a 2D column-major layout" << std::endl;
   // TODO: Print the layout
@@ -72,9 +68,6 @@ int main() {
   // TODO: Uncomment and complete:
   // auto layout_3d = make_layout(make_shape(Int<4>{}, Int<4>{}, Int<2>{}),
   // GenRowMajor{});
-
-  auto layout_3d =
-      make_layout(make_shape(Int<4>{}, Int<4>{}, Int<2>{}), GenRowMajor);
 
   std::cout << "Task 4 - 3D Layout (4x4x2):" << std::endl;
   std::cout << "TODO: Create and print a 3D layout" << std::endl;
