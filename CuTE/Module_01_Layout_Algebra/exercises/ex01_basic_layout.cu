@@ -20,8 +20,8 @@
 
 #include "cute/layout.hpp"
 #include "cute/util/print.hpp"
+#include <cute/tensor.hpp>
 #include <iostream>
-#include <print>
 
 using namespace cute;
 
@@ -33,11 +33,11 @@ int main() {
   // Hint: Use make_shape(Int<16>{}) and the layout will have stride 1
   // TODO: Uncomment and complete the following line:
   // auto layout_1d = make_layout(make_shape(Int<16>{}), GenRowMajor{});
-  auto layout_1d = make_layout(make_shape(int{16}), GenRowMajor{});
+  auto layout_1d = make_layout(make_shape(Int<16>{}, Int<1>{}), GenRowMajor{});
   std::cout << "Task 1 - 1D Layout (16 elements):" << std::endl;
   std::cout << "TODO: Create and print a 1D layout" << std::endl;
   // TODO: Print the layout using print(layout_1d) or std::cout << layout_1d
-  print(layout_1d);
+  print_layout(layout_1d);
   std::cout << std::endl;
 
   // TASK 2: Create a 2D row-major layout with shape (8, 4)
@@ -47,7 +47,8 @@ int main() {
   // auto layout_2d_rm = make_layout(make_shape(Int<8>{}, Int<4>{}),
   // GenRowMajor{});
   //
-  auto layout_2d_rm = make_layout(make_shape(Int<8>{}, 8), GenRowMajor{});
+  auto layout_2d_rm =
+      make_layout(make_shape(Int<8>{}, Int<4>{}), GenRowMajor{});
 
   std::cout << "Task 2 - 2D Row-Major Layout (8x4):" << std::endl;
   std::cout << "TODO: Create and print a 2D row-major layout" << std::endl;

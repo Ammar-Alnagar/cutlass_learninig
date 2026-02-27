@@ -19,6 +19,7 @@
 
 #include "cute/layout.hpp"
 #include "cute/util/print.hpp"
+#include <cute/tensor.hpp>
 #include <iostream>
 
 using namespace cute;

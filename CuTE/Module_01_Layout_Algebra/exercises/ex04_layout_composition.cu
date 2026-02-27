@@ -11,34 +11,12 @@
  */
 
 #include "cute/layout.hpp"
+#include <cute/tensor.hpp>
 #include <iostream>
 
 using namespace cute;
 
 // Manual print_layout — works for any standard Layout type
-template <class Layout> void print_layout(Layout const &layout) {
-  print(layout);
-  printf("\n");
-  printf("     ");
-  for (int j = 0; j < size<1>(layout); ++j) {
-    printf("%4d ", j);
-  }
-  printf("\n    +");
-  for (int j = 0; j < size<1>(layout); ++j)
-    printf("----+");
-  printf("\n");
-  for (int i = 0; i < size<0>(layout); ++i) {
-    printf("%3d |", i);
-    for (int j = 0; j < size<1>(layout); ++j) {
-      printf("%4d|", (int)layout(i, j));
-    }
-    printf("\n    +");
-    for (int j = 0; j < size<1>(layout); ++j)
-      printf("----+");
-    printf("\n");
-  }
-  printf("\n");
-}
 
 int main() {
   std::cout << "=== Exercise 04: Layout Composition ===" << std::endl;
