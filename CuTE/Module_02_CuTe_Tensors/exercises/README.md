@@ -125,6 +125,23 @@ Broadcast tensors for operations:
 
 ---
 
+### Exercise 09: Advanced Tensor Manipulations
+**File:** `ex09_advanced_tensor_manipulations.cu`
+
+Master advanced tensor operations:
+- Chained tensor views
+- Tensor reshape operations
+- Broadcasting patterns
+- Tensor composition
+- Strided tensor views
+- Tensor partitioning
+- Alignment and vectorization
+- Memory space transfers
+
+**Concepts:** Views, broadcasting, composition, optimization
+
+---
+
 ## Learning Path
 
 1. **Exercise 01** - Create basic tensors

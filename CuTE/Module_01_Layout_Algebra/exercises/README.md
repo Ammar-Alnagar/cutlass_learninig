@@ -127,6 +127,37 @@ Master debugging with `cute::print()`:
 
 ---
 
+### Exercise 09: Layout Arithmetic and Advanced Operations
+**File:** `ex09_layout_arithmetic.cu`
+
+Master advanced layout operations:
+- Layout introspection (rank, size, shape, stride)
+- Layout concatenation and product
+- Chained transformations
+- Mixed static/dynamic layouts
+- Broadcasting with stride 0
+- Sub-layout extraction
+
+**Concepts:** Introspection, arithmetic, transformations, broadcasting
+
+---
+
+### Exercise 10: Real-World Layout Patterns
+**File:** `ex10_real_world_layouts.cu`
+
+Apply layouts to real-world scenarios:
+- Matrix multiplication thread layouts
+- NHWC vs NCHW tensor formats
+- 2D convolution thread blocks
+- Batched and strided batched operations
+- Multi-head attention layouts
+- GEMM operand layouts
+- Complete thread hierarchy design
+
+**Concepts:** Real-world patterns, thread mapping, data formats, hierarchies
+
+---
+
 ## Learning Path
 
 1. **Start with Exercise 01** - Basic layout creation
