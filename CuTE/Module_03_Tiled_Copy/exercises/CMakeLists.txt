@@ -76,16 +76,4 @@ set_target_properties(ex06_coalescing_strategies PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
 
-# Exercise 7: Tiled Copy for Matrix Transpose
-add_executable(ex07_matrix_transpose_copy ex07_matrix_transpose_copy.cu)
-set_target_properties(ex07_matrix_transpose_copy PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
-# Exercise 8: Async Copy with cp.async
-add_executable(ex08_async_copy ex08_async_copy.cu)
-set_target_properties(ex08_async_copy PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
 message(STATUS "Module 03 Exercises configured successfully")

@@ -76,16 +76,4 @@ set_target_properties(ex06_gemm_with_mma PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
 
-# Exercise 7: MMA Atom Configurations
-add_executable(ex07_mma_configurations ex07_mma_configurations.cu)
-set_target_properties(ex07_mma_configurations PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
-# Exercise 8: Warp-Level Matrix Multiply
-add_executable(ex08_warp_level_mma ex08_warp_level_mma.cu)
-set_target_properties(ex08_warp_level_mma PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
 message(STATUS "Module 04 Exercises configured successfully")

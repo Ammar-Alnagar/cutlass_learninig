@@ -82,12 +82,6 @@ set_target_properties(ex07_tensor_memory_spaces PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
 
-# Exercise 8: Tensor Broadcasting
-add_executable(ex08_tensor_broadcasting ex08_tensor_broadcasting.cu)
-set_target_properties(ex08_tensor_broadcasting PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
 message(STATUS "Module 02 Exercises configured successfully")
 message(STATUS "CUTLASS include dir: ${CUTLASS_INCLUDE_DIR}")
 message(STATUS "CuTe include dir: ${CUTE_INCLUDE_DIR}")

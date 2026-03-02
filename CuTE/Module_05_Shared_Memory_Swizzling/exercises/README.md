@@ -92,30 +92,6 @@ Design GEMM shared memory layouts:
 
 ---
 
-### Exercise 07: Swizzle Pattern Design
-**File:** `ex07_swizzle_pattern_design.cu`
-
-Design custom swizzle patterns:
-- Pattern analysis
-- Bit selection
-- Verification
-
-**Concepts:** Design, analysis, verification
-
----
-
-### Exercise 08: Bank Conflict-Free Matrix Transpose
-**File:** `ex08_conflict_free_transpose.cu`
-
-Implement conflict-free transpose:
-- Transpose access patterns
-- Padded transpose
-- Swizzled transpose
-
-**Concepts:** Transpose, padding, swizzling
-
----
-
 ## Learning Path
 
 1. **Exercise 01** - Shared memory basics
@@ -124,8 +100,6 @@ Implement conflict-free transpose:
 4. **Exercise 04** - Swizzling fundamentals
 5. **Exercise 05** - XOR swizzling
 6. **Exercise 06** - GEMM layouts
-7. **Exercise 07** - Pattern design
-8. **Exercise 08** - Conflict-free transpose
 
 ## Bank Conflict Summary
 

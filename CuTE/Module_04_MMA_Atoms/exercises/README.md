@@ -92,30 +92,6 @@ Build complete GEMM:
 
 ---
 
-### Exercise 07: MMA Atom Configurations
-**File:** `ex07_mma_configurations.cu`
-
-Explore configurations:
-- Naming conventions
-- Architecture support
-- Configuration selection
-
-**Concepts:** Configurations, architectures, selection
-
----
-
-### Exercise 08: Warp-Level Matrix Multiply
-**File:** `ex08_warp_level_mma.cu`
-
-Master warp-level operations:
-- Warp primitives
-- Warp assignment
-- Warp synchronization
-
-**Concepts:** Warp-level, primitives, assignment
-
----
-
 ## Learning Path
 
 1. **Exercise 01** - MMA basics
@@ -124,8 +100,6 @@ Master warp-level operations:
 4. **Exercise 04** - Accumulator management
 5. **Exercise 05** - Mixed precision
 6. **Exercise 06** - Complete GEMM
-7. **Exercise 07** - Configurations
-8. **Exercise 08** - Warp-level MMA
 
 ## MMA Configurations Summary
 

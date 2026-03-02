@@ -75,16 +75,4 @@ set_target_properties(ex06_smem_layouts_gemm PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
 
-# Exercise 7: Swizzle Pattern Design
-add_executable(ex07_swizzle_pattern_design ex07_swizzle_pattern_design.cu)
-set_target_properties(ex07_swizzle_pattern_design PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
-# Exercise 8: Bank Conflict-Free Matrix Transpose
-add_executable(ex08_conflict_free_transpose ex08_conflict_free_transpose.cu)
-set_target_properties(ex08_conflict_free_transpose PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
 message(STATUS "Module 05 Exercises configured successfully")

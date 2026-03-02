@@ -113,35 +113,6 @@ Understand CUDA memory spaces:
 
 ---
 
-### Exercise 08: Tensor Broadcasting
-**File:** `ex08_tensor_broadcasting.cu`
-
-Broadcast tensors for operations:
-- Scalar to vector
-- Vector to matrix
-- Bias addition
-
-**Concepts:** Broadcasting, stride 0, efficient reuse
-
----
-
-### Exercise 09: Advanced Tensor Manipulations
-**File:** `ex09_advanced_tensor_manipulations.cu`
-
-Master advanced tensor operations:
-- Chained tensor views
-- Tensor reshape operations
-- Broadcasting patterns
-- Tensor composition
-- Strided tensor views
-- Tensor partitioning
-- Alignment and vectorization
-- Memory space transfers
-
-**Concepts:** Views, broadcasting, composition, optimization
-
----
-
 ## Learning Path
 
 1. **Exercise 01** - Create basic tensors
@@ -151,7 +122,6 @@ Master advanced tensor operations:
 5. **Exercise 05** - Compose layouts
 6. **Exercise 06** - Multi-dimensional
 7. **Exercise 07** - Memory spaces
-8. **Exercise 08** - Broadcasting
 
 ## Common Patterns
 

@@ -92,30 +92,6 @@ Optimize memory access patterns:
 
 ---
 
-### Exercise 07: Matrix Transpose Copy
-**File:** `ex07_matrix_transpose_copy.cu`
-
-Implement efficient transpose:
-- Tiled transpose algorithm
-- Coalesced read/write
-- Shared memory optimization
-
-**Concepts:** Transpose, tiling, optimization
-
----
-
-### Exercise 08: Async Copy with cp.async
-**File:** `ex08_async_copy.cu`
-
-Use asynchronous copy operations:
-- cp.async instruction
-- Pipeline patterns
-- Overlap compute/transfer
-
-**Concepts:** Async, pipelining, overlap
-
----
-
 ## Learning Path
 
 1. **Exercise 01** - Tiled copy basics
@@ -124,8 +100,6 @@ Use asynchronous copy operations:
 4. **Exercise 04** - gmem to smem
 5. **Exercise 05** - Copy atoms
 6. **Exercise 06** - Coalescing strategies
-7. **Exercise 07** - Matrix transpose
-8. **Exercise 08** - Async copy
 
 ## Key Concepts Summary
 

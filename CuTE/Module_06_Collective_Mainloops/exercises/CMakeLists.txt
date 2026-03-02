@@ -75,16 +75,4 @@ set_target_properties(ex06_double_buffering PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
 
-# Exercise 7: Complete GEMM Mainloop
-add_executable(ex07_complete_gemm_mainloop ex07_complete_gemm_mainloop.cu)
-set_target_properties(ex07_complete_gemm_mainloop PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
-# Exercise 8: Performance Optimization
-add_executable(ex08_performance_optimization ex08_performance_optimization.cu)
-set_target_properties(ex08_performance_optimization PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
 message(STATUS "Module 06 Exercises configured successfully")

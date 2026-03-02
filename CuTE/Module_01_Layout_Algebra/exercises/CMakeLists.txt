@@ -80,12 +80,6 @@ set_target_properties(ex07_layout_transformation PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
 
-# Exercise 8: Debug Layouts with cute::print
-add_executable(ex08_debug_with_print ex08_debug_with_print.cu)
-set_target_properties(ex08_debug_with_print PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
-
 message(STATUS "Module 01 Exercises configured successfully")
 message(STATUS "CUTLASS include dir: ${CUTLASS_INCLUDE_DIR}")
 message(STATUS "CuTe include dir: ${CUTE_INCLUDE_DIR}")
