@@ -4,364 +4,484 @@
  * Objective: Master advanced tensor operations including complex views,
  *            tensor algebra, and performance-oriented patterns
  *
- * Tasks:
- * 1. Create complex tensor views with multiple transformations
- * 2. Implement tensor algebra operations
- * 3. Work with tensor compositions
- * 4. Optimize tensor access patterns
+ * Instructions:
+ * - Complete each TODO section by implementing advanced tensor operations
+ * - Build on concepts from previous exercises
+ * - Think about how these patterns apply to real GPU kernels
  *
  * Key Concepts:
- * - Complex view chains
- * - Tensor algebra
- * - Composition patterns
- * - Performance optimization
+ * - Chained views: Multiple transformations on the same data
+ * - Reshape views: Same data, different dimensional organization
+ * - Tensor partitioning: Dividing tensors into tiles
+ * - Strided views: Subsampling patterns
  */
 
 #include "cute/layout.hpp"
 #include "cute/tensor.hpp"
 #include "cute/util/print.hpp"
 #include <iostream>
-#include <cuda_runtime.h>
 
 using namespace cute;
 
-// =========================================================================
-// Helper Functions
-// =========================================================================
-
-void check_cuda_error(cudaError_t result, const char* message) {
-    if (result != cudaSuccess) {
-        std::cerr << "CUDA Error: " << message << " - " 
-                  << cudaGetErrorString(result) << std::endl;
-    }
-}
-
-template <typename Tensor>
-void print_2d_tensor(const char* name, Tensor const& tensor, int rows, int cols) {
-    std::cout << name << " (" << rows << "x" << cols << "):" << std::endl;
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            printf("%4d ", tensor(i, j));
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
-
-// =========================================================================
-// Main Exercise
-// =========================================================================
-
 int main() {
-    std::cout << "=== Exercise 09: Advanced Tensor Manipulations ===" << std::endl;
-    std::cout << std::endl;
+  std::cout << "=== Exercise 09: Advanced Tensor Manipulations ===" << std::endl;
+  std::cout << std::endl;
 
-    // Allocate test data
-    int* h_data = new int[256];
-    for (int i = 0; i < 256; ++i) {
-        h_data[i] = i;
-    }
+  // Create test data
+  int data[256];
+  for (int i = 0; i < 256; ++i) {
+    data[i] = i;
+  }
 
-    int* d_data;
-    check_cuda_error(cudaMalloc(&d_data, 256 * sizeof(int)), "cudaMalloc");
-    check_cuda_error(cudaMemcpy(d_data, h_data, 256 * sizeof(int), cudaMemcpyHostToDevice), "cudaMemcpy");
 
-    // =========================================================================
-    // TASK 1: Chained Tensor Views
-    // =========================================================================
-    std::cout << "--- Task 1: Chained Tensor Views ---" << std::endl;
+  // ========================================================================
+  // TASK 1: Chained Tensor Views
+  // ========================================================================
+  // Goal: Create multiple views of the same data with different transformations
+  std::cout << "Task 1 - Chained Tensor Views:" << std::endl;
+  std::cout << "Start with a 16x16 tensor and create multiple views" << std::endl;
+  std::cout << std::endl;
 
-    // Start with a 16x16 tensor
-    auto base_layout = make_layout(make_shape(Int<16>{}, Int<16>{}), GenRowMajor{});
-    auto base_tensor = make_tensor(make_gmem_ptr(d_data), base_layout);
+  // Base tensor: 16x16 row-major
+  auto base_layout = make_layout(make_shape(Int<16>{}, Int<16>{}), GenRowMajor{});
+  auto base_tensor = make_tensor(make_gmem_ptr(data), base_layout);
 
-    std::cout << "Base tensor (16x16):" << std::endl;
-    std::cout << "  Layout: " << base_tensor.layout() << std::endl;
-    std::cout << std::endl;
+  std::cout << "Base tensor (16x16) layout:" << std::endl;
+  // TODO: Print the base layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // Create a transposed view
-    auto transposed_layout = make_layout(
-        get<1>(base_layout),
-        get<0>(base_layout)
-    );
-    auto transposed_tensor = make_tensor(make_gmem_ptr(d_data), transposed_layout);
+  // Create a transposed view
+  std::cout << "Creating transposed view..." << std::endl;
+  // TODO: Create a 16x16 column-major layout (transpose of row-major)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Transposed view (16x16):" << std::endl;
-    std::cout << "  Layout: " << transposed_tensor.layout() << std::endl;
-    std::cout << "  Verification: base(3, 7) should equal transposed(7, 3)" << std::endl;
-    std::cout << "  (Note: actual values require device access)" << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a tensor using the transposed layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Create a sub-tensor view (8x8 from center)
-    auto sub_layout = make_layout(
-        make_shape(Int<8>{}, Int<8>{}),
-        make_stride(Int<16>{}, Int<1>{})  // Same stride as parent
-    );
-    auto sub_tensor = make_tensor(make_gmem_ptr(d_data + base_layout(4, 4)), sub_layout);
+  std::cout << "Transposed view layout:" << std::endl;
+  // TODO: Print the transposed layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    std::cout << "Sub-tensor view (8x8 from center):" << std::endl;
-    std::cout << "  Layout: " << sub_tensor.layout() << std::endl;
-    std::cout << "  Offset from base: " << base_layout(4, 4) << std::endl;
-    std::cout << std::endl;
+  // Verify transpose relationship
+  std::cout << "Verify transpose: base(3, 7) should equal transposed(7, 3)" << std::endl;
+  std::cout << "  base(3, 7) = " << base_tensor(3, 7) << std::endl;
+  std::cout << "  transposed(7, 3) = ";
+  // TODO: Print transposed_tensor(7, 3)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // =========================================================================
-    // TASK 2: Tensor Reshape Views
-    // =========================================================================
-    std::cout << "--- Task 2: Tensor Reshape Views ---" << std::endl;
 
-    // 2D tensor (16x16)
-    auto tensor_2d = make_tensor(make_gmem_ptr(d_data), base_layout);
+  // ========================================================================
+  // TASK 2: Create a sub-tensor view (8x8 from center)
+  // ========================================================================
+  // Goal: Extract a view of the center 8x8 region
+  std::cout << "Task 2 - Sub-tensor View (Center 8x8):" << std::endl;
+  
+  // TODO: Create an 8x8 layout with stride (16, 1) - same as parent stride
+  // Hint: make_layout(make_shape(Int<8>{}, Int<8>{}), make_stride(Int<16>{}, Int<1>{}))
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // View as 1D (256 elements)
-    auto flat_layout = make_layout(Int<256>{});
-    auto flat_tensor = make_tensor(make_gmem_ptr(d_data), flat_layout);
+  // TODO: Calculate offset for center (starting at row 4, col 4)
+  // Hint: offset = base_layout(4, 4)
+  int center_offset = 0;
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // View as 3D (4x4x16)
-    auto tensor_3d_layout = make_layout(make_shape(Int<4>{}, Int<4>{}, Int<16>{}), GenRowMajor{});
-    auto tensor_3d = make_tensor(make_gmem_ptr(d_data), tensor_3d_layout);
+  // TODO: Create a tensor with data + center_offset
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Same data, different views:" << std::endl;
-    std::cout << "  2D (16x16): " << tensor_2d.layout() << std::endl;
-    std::cout << "  1D (256):   " << flat_tensor.layout() << std::endl;
-    std::cout << "  3D (4x4x16): " << tensor_3d.layout() << std::endl;
-    std::cout << std::endl;
+  std::cout << "Center 8x8 sub-tensor (starting at offset " << center_offset << "):" << std::endl;
+  // TODO: Print the sub-tensor (just first 4 rows to save space)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  ..." << std::endl;
+  std::cout << std::endl;
 
-    // Verify equivalence (conceptually)
-    std::cout << "Equivalence (offset calculations):" << std::endl;
-    std::cout << "  2D(5, 10) offset:  " << base_layout(5, 10) << std::endl;
-    std::cout << "  1D(90) offset:     " << flat_layout(90) << std::endl;
-    std::cout << "  3D(1, 2, 10) offset: " << tensor_3d_layout(1, 2, 10) << std::endl;
-    std::cout << "  All should be 90" << std::endl;
-    std::cout << std::endl;
 
-    // =========================================================================
-    // TASK 3: Tensor Broadcasting Patterns
-    // =========================================================================
-    std::cout << "--- Task 3: Tensor Broadcasting Patterns ---" << std::endl;
+  // ========================================================================
+  // TASK 3: Tensor Reshape Views
+  // ========================================================================
+  // Goal: View the same 256 elements as different shapes
+  std::cout << "Task 3 - Tensor Reshape Views:" << std::endl;
+  std::cout << "Same 256 elements, different views:" << std::endl;
+  std::cout << std::endl;
 
-    // Scalar broadcast
-    int scalar_value = 42;
-    auto scalar_layout = make_layout(Int<1>{});
-    auto scalar_tensor = make_tensor(&scalar_value, scalar_layout);
+  // 2D view: 16x16
+  auto tensor_2d = make_tensor(make_gmem_ptr(data), base_layout);
 
-    // Broadcast layout (8x8, all access same scalar)
-    auto broadcast_layout = make_layout(
-        make_shape(Int<8>{}, Int<8>{}),
-        make_stride(Int<0>{}, Int<0>{})  // Both strides = 0
-    );
-    auto broadcast_tensor = make_tensor(&scalar_value, broadcast_layout);
+  // TODO: Create a 1D view with 256 elements
+  // Hint: make_layout(Int<256>{})
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Scalar broadcast:" << std::endl;
-    std::cout << "  Scalar tensor: " << scalar_tensor.layout() << std::endl;
-    std::cout << "  Broadcast layout: " << broadcast_layout << std::endl;
-    std::cout << "  All broadcast_tensor(i,j) access the same scalar" << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a tensor using the flat layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Vector broadcast (bias pattern)
-    int bias[64];
-    for (int i = 0; i < 64; ++i) {
-        bias[i] = i * 10;
-    }
+  // TODO: Create a 3D view with shape (4, 4, 16)
+  // Hint: make_layout(make_shape(Int<4>{}, Int<4>{}, Int<16>{}), GenRowMajor{})
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    auto bias_layout = make_layout(Int<64>{});
-    auto bias_tensor = make_tensor(bias, bias_layout);
+  // TODO: Create a tensor using the 3D layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Broadcast to matrix (32 rows, 64 cols, row stride = 0)
-    auto bias_matrix_layout = make_layout(
-        make_shape(Int<32>{}, Int<64>{}),
-        make_stride(Int<0>{}, Int<1>{})  // Row stride = 0
-    );
-    auto bias_matrix = make_tensor(bias, bias_matrix_layout);
+  std::cout << "2D view (16x16) layout: ";
+  // TODO: Print tensor_2d.layout()
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    std::cout << "Vector broadcast (bias pattern):" << std::endl;
-    std::cout << "  Bias vector: " << bias_tensor.layout() << std::endl;
-    std::cout << "  Bias matrix: " << bias_matrix.layout() << std::endl;
-    std::cout << "  bias_matrix(0, j) == bias_matrix(31, j) for all j" << std::endl;
-    std::cout << std::endl;
+  std::cout << "1D view (256) layout:   ";
+  // TODO: Print flat_tensor.layout()
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // =========================================================================
-    // TASK 4: Tensor Composition
-    // =========================================================================
-    std::cout << "--- Task 4: Tensor Composition ---" << std::endl;
+  std::cout << "3D view (4x4x16) layout: ";
+  // TODO: Print tensor_3d.layout()
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+  std::cout << std::endl;
 
-    // Array of pointers (simulating tile pointers)
-    int* tile_ptrs[4];
-    for (int i = 0; i < 4; ++i) {
-        tile_ptrs[i] = d_data + i * 64;  // Each tile is 64 elements
-    }
+  // Verify equivalence
+  std::cout << "Verify all views access the same data:" << std::endl;
+  std::cout << "Position representing offset 90:" << std::endl;
+  std::cout << "  2D(5, 10) = " << tensor_2d(5, 10) << std::endl;
+  std::cout << "  1D(90)    = ";
+  // TODO: Print flat_tensor(90)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+  std::cout << "  3D(1, 2, 10) = ";
+  // TODO: Print tensor_3d(1, 2, 10)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+  std::cout << std::endl;
 
-    // Tile tensor (2x2 grid of tiles)
-    auto tile_layout = make_layout(make_shape(Int<2>{}, Int<2>{}), GenRowMajor{});
-    auto tile_tensor = make_tensor(tile_ptrs, tile_layout);
 
-    std::cout << "Tile tensor (2x2 grid):" << std::endl;
-    std::cout << "  Layout: " << tile_tensor.layout() << std::endl;
-    std::cout << "  Each element is a pointer to an 8x8 tile" << std::endl;
-    std::cout << std::endl;
+  // ========================================================================
+  // TASK 4: Tensor Broadcasting with Stride 0
+  // ========================================================================
+  // Goal: Create broadcast layouts for scalar and vector broadcasting
+  std::cout << "Task 4 - Tensor Broadcasting Patterns:" << std::endl;
+  
+  int scalar_value = 42;
 
-    // Element layout within each tile
-    auto element_layout = make_layout(make_shape(Int<8>{}, Int<8>{}), GenRowMajor{});
+  // TODO: Create a broadcast layout for 8x8 matrix from scalar
+  // Hint: make_layout(make_shape(Int<8>{}, Int<8>{}), make_stride(Int<0>{}, Int<0>{}))
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Element layout (8x8 within tile):" << std::endl;
-    std::cout << "  Layout: " << element_layout << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a tensor using the broadcast layout and &scalar_value
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Access pattern: tile_tensor(tile_row, tile_col)[elem_row, elem_col]
-    std::cout << "Access pattern:" << std::endl;
-    std::cout << "  tile_tensor(0, 0) -> pointer to tile 0" << std::endl;
-    std::cout << "  tile_tensor(1, 1) -> pointer to tile 3" << std::endl;
-    std::cout << "  Combined: Access element within selected tile" << std::endl;
-    std::cout << std::endl;
+  std::cout << "Scalar broadcast to 8x8:" << std::endl;
+  std::cout << "Layout: ";
+  // TODO: Print broadcast_layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // =========================================================================
-    // TASK 5: Strided Tensor Views
-    // =========================================================================
-    std::cout << "--- Task 5: Strided Tensor Views ---" << std::endl;
+  std::cout << "Sample accesses: broadcast(0,0)=" << broadcast_tensor(0, 0);
+  std::cout << ", broadcast(4,4)=" << broadcast_tensor(4, 4);
+  std::cout << ", broadcast(7,7)=" << broadcast_tensor(7, 7) << std::endl;
+  std::cout << "All access the same scalar value!" << std::endl;
+  std::cout << std::endl;
 
-    // Original tensor (16x16)
-    auto original = make_tensor(make_gmem_ptr(d_data), base_layout);
 
-    // Strided view: every other row
-    auto strided_layout = make_layout(
-        make_shape(Int<8>{}, Int<16>{}),
-        make_stride(Int<32>{}, Int<1>{})  // Row stride = 32 (2 rows)
-    );
-    auto strided_tensor = make_tensor(make_gmem_ptr(d_data), strided_layout);
+  // ========================================================================
+  // TASK 5: Vector broadcast (bias pattern)
+  // ========================================================================
+  // Goal: Broadcast a 64-element vector to a 32x64 matrix
+  std::cout << "Task 5 - Vector Broadcast (Bias Pattern):" << std::endl;
+  
+  int bias[64];
+  for (int i = 0; i < 64; ++i) {
+    bias[i] = i * 10;
+  }
 
-    std::cout << "Strided view (every other row):" << std::endl;
-    std::cout << "  Original layout: " << original.layout() << std::endl;
-    std::cout << "  Strided layout:  " << strided_layout << std::endl;
-    std::cout << "  strided_tensor(i, j) accesses original(2*i, j)" << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a bias matrix layout with shape (32, 64) and stride (0, 1)
+  // This broadcasts the 64-element vector to 32 identical rows
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Strided view: every other column
-    auto col_strided_layout = make_layout(
-        make_shape(Int<16>{}, Int<8>{}),
-        make_stride(Int<16>{}, Int<2>{})  // Col stride = 2
-    );
-    auto col_strided_tensor = make_tensor(make_gmem_ptr(d_data), col_strided_layout);
+  // TODO: Create a tensor using the bias matrix layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Column-strided view (every other column):" << std::endl;
-    std::cout << "  Layout: " << col_strided_layout << std::endl;
-    std::cout << "  col_strided_tensor(i, j) accesses original(i, 2*j)" << std::endl;
-    std::cout << std::endl;
+  std::cout << "Bias matrix layout (32 rows, 64 cols, row stride=0):" << std::endl;
+  // TODO: Print bias_matrix.layout()
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // =========================================================================
-    // TASK 6: Tensor Partitioning
-    // =========================================================================
-    std::cout << "--- Task 6: Tensor Partitioning ---" << std::endl;
+  std::cout << "Verify broadcasting - all rows have same values:" << std::endl;
+  std::cout << "  bias_matrix(0, 10)  = " << bias_matrix(0, 10) << std::endl;
+  std::cout << "  bias_matrix(15, 10) = ";
+  // TODO: Print bias_matrix(15, 10)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+  std::cout << "  bias_matrix(31, 10) = ";
+  // TODO: Print bias_matrix(31, 10)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (all should be 100)" << std::endl;
+  std::cout << std::endl;
 
-    // Partition 16x16 tensor into 4x4 tiles
-    auto partitioned_layout = logical_divide(base_layout, make_shape(Int<4>{}, Int<4>{}));
 
-    std::cout << "Partitioned tensor (4x4 tiles):" << std::endl;
-    std::cout << "  Layout: " << partitioned_layout << std::endl;
-    std::cout << "  Number of tiles: 4x4 = 16" << std::endl;
-    std::cout << "  Each tile: 4x4 elements" << std::endl;
-    std::cout << std::endl;
+  // ========================================================================
+  // TASK 6: Strided Tensor Views
+  // ========================================================================
+  // Goal: Create views that access every Nth element
+  std::cout << "Task 6 - Strided Tensor Views:" << std::endl;
+  std::cout << "Create a view that accesses every other row" << std::endl;
+  std::cout << std::endl;
 
-    // Access a specific tile
-    std::cout << "Tile access:" << std::endl;
-    std::cout << "  Tile (0, 0) covers elements (0-3, 0-3)" << std::endl;
-    std::cout << "  Tile (1, 1) covers elements (4-7, 4-7)" << std::endl;
-    std::cout << "  Tile (3, 3) covers elements (12-15, 12-15)" << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a strided layout with shape (8, 16) and stride (32, 1)
+  // Row stride of 32 means we skip every other row of the 16-wide original
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // =========================================================================
-    // TASK 7: Tensor Alignment and Vectorization
-    // =========================================================================
-    std::cout << "--- Task 7: Tensor Alignment and Vectorization ---" << std::endl;
+  // TODO: Create a tensor using the strided layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Aligned tensor for vectorized access (128-bit = 4 floats)
-    auto aligned_layout = make_layout(
-        make_shape(Int<16>{}, Int<16>{}),
-        make_stride(Int<16>{}, Int<1>{})  // Column stride = 1 (aligned)
-    );
+  std::cout << "Strided view layout (every other row):" << std::endl;
+  // TODO: Print strided_layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    std::cout << "Aligned tensor for vectorized access:" << std::endl;
-    std::cout << "  Layout: " << aligned_layout << std::endl;
-    std::cout << "  Column stride = 1 enables vectorized loads" << std::endl;
-    std::cout << "  4 consecutive columns can be loaded as float4" << std::endl;
-    std::cout << std::endl;
+  std::cout << "First 4 rows of strided view:" << std::endl;
+  // TODO: Print first 4 rows (each with 8 columns) of strided_tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (Row 0 = original row 0, Row 1 = original row 2, etc.)" << std::endl;
+  std::cout << std::endl;
 
-    // Vectorized access pattern
-    std::cout << "Vectorized access pattern:" << std::endl;
-    std::cout << "  Load: float4 val = reinterpret_cast<float4*>(&tensor(i, j))[0];" << std::endl;
-    std::cout << "  Requires: j % 4 == 0 (16-byte alignment)" << std::endl;
-    std::cout << std::endl;
 
-    // =========================================================================
-    // TASK 8: Tensor Memory Space Transfers
-    // =========================================================================
-    std::cout << "--- Task 8: Tensor Memory Space Transfers ---" << std::endl;
+  // ========================================================================
+  // TASK 7: Tensor Partitioning with logical_divide
+  // ========================================================================
+  // Goal: Use logical_divide to partition a tensor into tiles
+  std::cout << "Task 7 - Tensor Partitioning:" << std::endl;
+  std::cout << "Partition a 16x16 tensor into 4x4 tiles" << std::endl;
+  std::cout << std::endl;
 
-    std::cout << "Memory space transfer pattern:" << std::endl;
-    std::cout << "  1. Global -> Shared (coalesced load)" << std::endl;
-    std::cout << "  2. Shared -> Register (vectorized load)" << std::endl;
-    std::cout << "  3. Process in registers" << std::endl;
-    std::cout << "  4. Register -> Shared" << std::endl;
-    std::cout << "  5. Shared -> Global (coalesced store)" << std::endl;
-    std::cout << std::endl;
+  // TODO: Use logical_divide to partition base_layout into 4x4 tiles
+  // Hint: auto partitioned = logical_divide(base_layout, make_shape(Int<4>{}, Int<4>{}));
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Example kernel structure:" << std::endl;
-    std::cout << "  __global__ void kernel(float* gmem_in, float* gmem_out) {" << std::endl;
-    std::cout << "    extern __shared__ float smem[];" << std::endl;
-    std::cout << "    auto gmem_tensor = make_tensor(make_gmem_ptr(gmem_in), ...);" << std::endl;
-    std::cout << "    auto smem_tensor = make_tensor(make_smem_ptr(smem), ...);" << std::endl;
-    std::cout << "    float rmem[4];" << std::endl;
-    std::cout << "    auto rmem_tensor = make_tensor(make_rmem_ptr(rmem), ...);" << std::endl;
-    std::cout << "    // Transfer and process..." << std::endl;
-    std::cout << "  }" << std::endl;
-    std::cout << std::endl;
+  std::cout << "Partitioned layout:" << std::endl;
+  // TODO: Print partitioned_layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // =========================================================================
-    // CHALLENGE: Design an Optimal Tensor Layout
-    // =========================================================================
-    std::cout << "=== Challenge: Optimal Tensor Layout Design ===" << std::endl;
+  std::cout << "The partitioned layout has 4x4 = 16 tiles, each tile is 4x4 elements" << std::endl;
+  std::cout << "Access pattern: partitioned(tile_i, tile_j, elem_i, elem_j)" << std::endl;
+  std::cout << std::endl;
 
-    std::cout << "Design a tensor layout for matrix multiplication:" << std::endl;
-    std::cout << "  Matrix A: 64x64 (row-major)" << std::endl;
-    std::cout << "  Matrix B: 64x64 (column-major)" << std::endl;
-    std::cout << "  Matrix C: 64x64 (row-major)" << std::endl;
-    std::cout << "  Thread block: 16x16 threads" << std::endl;
-    std::cout << "  Each thread computes 4x4 elements" << std::endl;
-    std::cout << std::endl;
+  // Access a specific tile
+  std::cout << "Tile (0, 0) - top-left tile elements:" << std::endl;
+  // TODO: Print elements of tile (0,0) using partitioned_layout(0, 0, ei, ej)
+  // Hint: Loop ei, ej from 0 to 3
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // Design layouts
-    auto A_layout = make_layout(make_shape(Int<64>{}, Int<64>{}), GenRowMajor{});
-    auto B_layout = make_layout(make_shape(Int<64>{}, Int<64>{}), GenColMajor{});
-    auto C_layout = make_layout(make_shape(Int<64>{}, Int<64>{}), GenRowMajor{});
+  std::cout << "Tile (1, 1) - center tile elements:" << std::endl;
+  // TODO: Print elements of tile (1,1)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    std::cout << "Your designs:" << std::endl;
-    std::cout << "  A layout: " << A_layout << std::endl;
-    std::cout << "  B layout: " << B_layout << std::endl;
-    std::cout << "  C layout: " << C_layout << std::endl;
-    std::cout << std::endl;
 
-    // Shared memory layouts (with padding)
-    auto As_layout = make_layout(make_shape(Int<16>{}, Int<16>{}), make_stride(Int<17>{}, Int<1>{}));
-    auto Bs_layout = make_layout(make_shape(Int<16>{}, Int<16>{}), make_stride(Int<17>{}, Int<1>{}));
+  // ========================================================================
+  // TASK 8: Tensor Alignment for Vectorized Access
+  // ========================================================================
+  // Goal: Understand how layout affects vectorized memory access
+  std::cout << "Task 8 - Tensor Alignment for Vectorized Access:" << std::endl;
+  std::cout << "For vectorized loads (float4), elements must be consecutive" << std::endl;
+  std::cout << std::endl;
 
-    std::cout << "Shared memory layouts (padded):" << std::endl;
-    std::cout << "  As: " << As_layout << std::endl;
-    std::cout << "  Bs: " << Bs_layout << std::endl;
-    std::cout << "  Padding avoids bank conflicts during MMA" << std::endl;
-    std::cout << std::endl;
+  auto aligned_layout = make_layout(
+    make_shape(Int<16>{}, Int<16>{}),
+    make_stride(Int<16>{}, Int<1>{})
+  );
 
-    // Cleanup
-    delete[] h_data;
-    cudaFree(d_data);
+  std::cout << "Aligned layout (column stride = 1):" << std::endl;
+  // TODO: Print aligned_layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    std::cout << "=== Exercise Complete ===" << std::endl;
-    std::cout << "Key Learnings:" << std::endl;
-    std::cout << "1. Tensor views are zero-copy transformations" << std::endl;
-    std::cout << "2. Multiple views can reference the same data" << std::endl;
-    std::cout << "3. Broadcasting uses stride 0 for virtual expansion" << std::endl;
-    std::cout << "4. Tensor composition enables hierarchical access" << std::endl;
-    std::cout << "5. Strided views enable sub-sampling patterns" << std::endl;
-    std::cout << "6. Partitioning divides tensors into tiles" << std::endl;
-    std::cout << "7. Alignment enables vectorized access" << std::endl;
-    std::cout << "8. Memory space transfers follow a pattern" << std::endl;
+  std::cout << "Consecutive column elements (for vectorized load):" << std::endl;
+  std::cout << "  Offsets for row 0, cols 0-3: ";
+  // TODO: Print aligned_layout(0, 0), aligned_layout(0, 1), aligned_layout(0, 2), aligned_layout(0, 3)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << " (consecutive!)" << std::endl;
+  std::cout << std::endl;
 
-    return 0;
+
+  // ========================================================================
+  // CHALLENGE: Design a layout for matrix multiplication tiles
+  // ========================================================================
+  std::cout << "=== Challenge: Layout for Matrix Multiplication ===" << std::endl;
+  std::cout << "Design shared memory layouts for a 16x16 tile with padding" << std::endl;
+  std::cout << "Padding avoids bank conflicts during matrix multiplication" << std::endl;
+  std::cout << std::endl;
+
+  // TODO: Create a layout for a 16x16 tile with stride (17, 1) - padding of 1
+  // The extra column prevents bank conflicts when accessing columns
+  // Hint: make_layout(make_shape(Int<16>{}, Int<16>{}), make_stride(Int<17>{}, Int<1>{}))
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+
+  std::cout << "Padded shared memory layout:" << std::endl;
+  // TODO: Print your padded layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "Notice: Row stride is 17, not 16 (1 element padding per row)" << std::endl;
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // CHALLENGE 2: Compute the offset for a complex access pattern
+  // ========================================================================
+  std::cout << "=== Challenge 2: Complex Offset Calculation ===" << std::endl;
+  std::cout << "For a partitioned 16x16 tensor with 4x4 tiles:" << std::endl;
+  std::cout << "Calculate the flat offset for tile (2, 1), element (3, 2)" << std::endl;
+  std::cout << std::endl;
+
+  // TODO: Calculate manually:
+  // Tile (2, 1) starts at global row = 2*4 = 8, global col = 1*4 = 4
+  // Element (3, 2) within tile is at global row = 8+3 = 11, global col = 4+2 = 6
+  // Flat offset in 16x16 row-major = 11 * 16 + 6 = 182
+  int manual_offset = 0;
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+
+  // TODO: Verify using partitioned_layout(2, 1, 3, 2)
+  int layout_offset = 0;
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+
+  std::cout << "Manual calculation: " << manual_offset << std::endl;
+  std::cout << "From partitioned layout: " << layout_offset << std::endl;
+  std::cout << "Match: " << (manual_offset == layout_offset ? "YES" : "NO") << std::endl;
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // Summary
+  // ========================================================================
+  std::cout << "=== Exercise Complete ===" << std::endl;
+  std::cout << "Key Learnings:" << std::endl;
+  std::cout << "1. How do you create multiple views of the same data?" << std::endl;
+  std::cout << "2. What is the benefit of reshape views (no copying)?" << std::endl;
+  std::cout << "3. How does stride=0 enable broadcasting?" << std::endl;
+  std::cout << "4. What does logical_divide() do?" << std::endl;
+  std::cout << "5. Why add padding to shared memory layouts?" << std::endl;
+
+  return 0;
 }

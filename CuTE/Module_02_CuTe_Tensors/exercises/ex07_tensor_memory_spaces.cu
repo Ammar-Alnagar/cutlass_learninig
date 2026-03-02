@@ -1,179 +1,361 @@
 /**
  * Exercise 07: Tensor Memory Spaces
- * 
+ *
  * Objective: Understand how CuTe tensors work with different CUDA memory spaces
- * 
- * Tasks:
- * 1. Create tensors in global memory (gmem)
- * 2. Create tensors in shared memory (smem)
- * 3. Understand pointer wrappers for different memory spaces
- * 4. Practice memory space conversions
- * 
+ *
+ * Instructions:
+ * - Complete each TODO section by creating tensors with different memory spaces
+ * - Understand the pointer wrappers: make_gmem_ptr, make_smem_ptr, make_rmem_ptr
+ * - Simulate data movement between memory spaces
+ *
  * Key Concepts:
- * - Global Memory: Large, slow, persistent across kernel launches
- * - Shared Memory: Small, fast, shared within thread block
- * - Register Memory: Fastest, private to each thread
- * - Pointer Wrappers: make_gmem_ptr, make_smem_ptr, make_rmem_ptr
+ * - Global Memory (gmem): Large, slow, accessible by all threads
+ * - Shared Memory (smem): Small, fast, shared within a thread block
+ * - Register Memory (rmem): Fastest, private to each thread
+ * - Pointer wrappers tell CuTe which memory space a pointer refers to
  */
 
-#include <iostream>
 #include "cute/layout.hpp"
 #include "cute/tensor.hpp"
 #include "cute/util/print.hpp"
+#include <iostream>
 
 using namespace cute;
 
 int main() {
-    std::cout << "=== Exercise 07: Tensor Memory Spaces ===" << std::endl;
-    std::cout << std::endl;
+  std::cout << "=== Exercise 07: Tensor Memory Spaces ===" << std::endl;
+  std::cout << std::endl;
 
-    // TASK 1: Create a global memory tensor
-    std::cout << "Task 1 - Global Memory Tensor:" << std::endl;
-    float gmem_data[32];
-    for (int i = 0; i < 32; ++i) {
-        gmem_data[i] = static_cast<float>(i);
-    }
 
-    auto gmem_layout = make_layout(make_shape(Int<4>{}, Int<8>{}), GenRowMajor{});
-    auto gmem_tensor = make_tensor(make_gmem_ptr(gmem_data), gmem_layout);
+  // ========================================================================
+  // TASK 1: Create a global memory tensor
+  // ========================================================================
+  // Goal: Wrap a raw pointer with make_gmem_ptr() to create a gmem tensor
+  std::cout << "Task 1 - Global Memory Tensor:" << std::endl;
+  
+  float gmem_data[32];
+  for (int i = 0; i < 32; ++i) {
+    gmem_data[i] = static_cast<float>(i);
+  }
 
-    std::cout << "Global memory tensor created" << std::endl;
-    std::cout << "Layout: " << gmem_tensor.layout() << std::endl;
-    std::cout << "Sample access: tensor(0, 0) = " << gmem_tensor(0, 0) << std::endl;
-    std::cout << "Note: In real kernels, global memory is on the GPU" << std::endl;
-    std::cout << std::endl;
+  auto gmem_layout = make_layout(make_shape(Int<4>{}, Int<8>{}), GenRowMajor{});
 
-    // TASK 2: Create a shared memory tensor (simulated on host)
-    std::cout << "Task 2 - Shared Memory Tensor (Simulated):" << std::endl;
-    float smem_data[32];
-    for (int i = 0; i < 32; ++i) {
-        smem_data[i] = static_cast<float>(i * 2);
-    }
+  // TODO: Create a tensor using make_gmem_ptr() to wrap gmem_data
+  // Hint: make_tensor(make_gmem_ptr(gmem_data), gmem_layout)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    auto smem_layout = make_layout(make_shape(Int<4>{}, Int<8>{}), GenRowMajor{});
-    auto smem_tensor = make_tensor(make_smem_ptr(smem_data), smem_layout);
+  std::cout << "Global memory tensor created" << std::endl;
+  std::cout << "Layout: ";
+  // TODO: Print the tensor's layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    std::cout << "Shared memory tensor created" << std::endl;
-    std::cout << "Layout: " << smem_tensor.layout() << std::endl;
-    std::cout << "Sample access: tensor(0, 0) = " << smem_tensor(0, 0) << std::endl;
-    std::cout << "Note: In real kernels, use 'extern __shared__ float data[];'" << std::endl;
-    std::cout << std::endl;
+  std::cout << "Sample access - tensor(0, 0) = ";
+  // TODO: Print gmem_tensor(0, 0)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 0)" << std::endl;
 
-    // TASK 3: Create a register memory tensor (local to thread)
-    std::cout << "Task 3 - Register Memory Tensor:" << endl;
-    float rmem_data[16];
-    for (int i = 0; i < 16; ++i) {
-        rmem_data[i] = static_cast<float>(i * 3);
-    }
+  std::cout << "Sample access - tensor(3, 7) = ";
+  // TODO: Print gmem_tensor(3, 7)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 31)" << std::endl;
+  std::cout << std::endl;
 
-    auto rmem_layout = make_layout(make_shape(Int<4>{}, Int<4>{}), GenRowMajor{});
-    auto rmem_tensor = make_tensor(make_rmem_ptr(rmem_data), rmem_layout);
 
-    std::cout << "Register memory tensor created" << std::endl;
-    std::cout << "Layout: " << rmem_tensor.layout() << std::endl;
-    std::cout << "Sample access: tensor(0, 0) = " << rmem_tensor(0, 0) << std::endl;
-    std::cout << "Note: Register memory is automatic for local variables" << std::endl;
-    std::cout << std::endl;
+  // ========================================================================
+  // TASK 2: Create a shared memory tensor (simulated on host)
+  // ========================================================================
+  // Goal: Wrap a pointer with make_smem_ptr() to create a smem tensor
+  // Note: On host, this is just a simulation. In kernels, use extern __shared__
+  std::cout << "Task 2 - Shared Memory Tensor (Simulated):" << std::endl;
+  
+  float smem_data[32];
+  for (int i = 0; i < 32; ++i) {
+    smem_data[i] = static_cast<float>(i * 10);
+  }
 
-    // TASK 4: Compare memory space characteristics
-    std::cout << "Task 4 - Memory Space Comparison:" << std::endl;
-    std::cout << std::endl;
-    std::cout << "| Property      | Global    | Shared    | Register  |" << std::endl;
-    std::cout << "|---------------|-----------|-----------|-----------|" << std::endl;
-    std::cout << "| Size          | GBs       | KBs/MBs   | KBs       |" << std::endl;
-    std::cout << "| Latency       | High      | Low       | Lowest    |" << std::endl;
-    std::cout << "| Bandwidth     | Low       | High      | Highest   |" << std::endl;
-    std::cout << "| Scope         | All       | Block     | Thread    |" << std::endl;
-    std::cout << "| Persistence   | Kernel    | Block     | Thread    |" << std::endl;
-    std::cout << std::endl;
+  auto smem_layout = make_layout(make_shape(Int<4>{}, Int<8>{}), GenRowMajor{});
 
-    // TASK 5: Simulate data movement between memory spaces
-    std::cout << "Task 5 - Simulated Data Movement:" << std::endl;
-    std::cout << "Typical kernel data flow: Global -> Shared -> Register -> Compute" << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a tensor using make_smem_ptr() to wrap smem_data
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    // Simulate loading from global to shared
-    std::cout << "Step 1: Load from Global to Shared" << std::endl;
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            smem_tensor(i, j) = gmem_tensor(i, j);
-        }
-    }
-    std::cout << "  Loaded 4x8 tile to shared memory" << std::endl;
+  std::cout << "Shared memory tensor created" << std::endl;
+  std::cout << "Layout: ";
+  // TODO: Print the tensor's layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // Simulate loading from shared to register
-    std::cout << "Step 2: Load from Shared to Register" << std::endl;
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            rmem_tensor(i, j) = smem_tensor(i, j);
-        }
-    }
-    std::cout << "  Loaded 4x4 tile to registers" << std::endl;
+  std::cout << "Sample access - tensor(0, 0) = ";
+  // TODO: Print smem_tensor(0, 0)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 0)" << std::endl;
 
-    // Verify data
-    std::cout << "Step 3: Verify data in registers" << std::endl;
-    std::cout << "  Register tensor contents:" << std::endl;
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            printf("  %5.1f ", rmem_tensor(i, j));
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+  std::cout << "Sample access - tensor(2, 5) = ";
+  // TODO: Print smem_tensor(2, 5)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 210)" << std::endl;
+  std::cout << std::endl;
 
-    // TASK 6: Understand pointer wrapper functions
-    std::cout << "Task 6 - Pointer Wrapper Functions:" << std::endl;
-    std::cout << "make_gmem_ptr(ptr) - Wraps global/device memory pointer" << std::endl;
-    std::cout << "make_smem_ptr(ptr) - Wraps shared memory pointer" << std::endl;
-    std::cout << "make_rmem_ptr(ptr) - Wraps register/local memory pointer" << std::endl;
-    std::cout << std::endl;
 
-    // CHALLENGE: Memory space selection
-    std::cout << "=== Challenge: Choose the Right Memory Space ===" << std::endl;
-    std::cout << "Scenario 1: Input/output matrices for GEMM" << std::endl;
-    std::cout << "  Answer: Global memory (large, persistent)" << std::endl;
-    std::cout << std::endl;
+  // ========================================================================
+  // TASK 3: Create a register memory tensor
+  // ========================================================================
+  // Goal: Wrap a pointer with make_rmem_ptr() to create a rmem tensor
+  // Note: Register memory is for thread-local data (accumulators, etc.)
+  std::cout << "Task 3 - Register Memory Tensor:" << std::endl;
+  
+  float rmem_data[16];
+  for (int i = 0; i < 16; ++i) {
+    rmem_data[i] = static_cast<float>(i * 100);
+  }
 
-    std::cout << "Scenario 2: Tile of data shared by thread block" << std::endl;
-    std::cout << "  Answer: Shared memory (fast, block-wide sharing)" << std::endl;
-    std::cout << std::endl;
+  auto rmem_layout = make_layout(make_shape(Int<4>{}, Int<4>{}), GenRowMajor{});
 
-    std::cout << "Scenario 3: Accumulator for matrix multiplication" << std::endl;
-    std::cout << "  Answer: Register memory (fastest, thread-private)" << std::endl;
-    std::cout << std::endl;
+  // TODO: Create a tensor using make_rmem_ptr() to wrap rmem_data
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-    std::cout << "Scenario 4: Lookup table used by all threads" << std::endl;
-    std::cout << "  Answer: Constant memory or shared memory" << std::endl;
-    std::cout << std::endl;
+  std::cout << "Register memory tensor created" << std::endl;
+  std::cout << "Layout: ";
+  // TODO: Print the tensor's layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
 
-    // CUDA KERNEL PATTERN
-    std::cout << "=== Typical CUDA Kernel Pattern ===" << std::endl;
-    std::cout << R"(
-__global__ void gemm_kernel(float* A, float* B, float* C, int M, int N, int K) {
-    // Declare shared memory for tiles
-    extern __shared__ float shared_mem[];
-    float* As = shared_mem;
-    float* Bs = &shared_mem[TILE_SIZE * TILE_SIZE];
-    
-    // Create tensors
-    auto A_gmem = make_tensor(make_gmem_ptr(A), ...);
-    auto B_gmem = make_tensor(make_gmem_ptr(B), ...);
-    auto C_gmem = make_tensor(make_gmem_ptr(C), ...);
-    auto As_smem = make_tensor(make_smem_ptr(As), ...);
-    auto Bs_smem = make_tensor(make_smem_ptr(Bs), ...);
-    
-    // Load tiles from global to shared
-    // Perform computation using registers
-    // Store results back to global
-}
-)" << std::endl;
+  std::cout << "Sample access - tensor(0, 0) = ";
+  // TODO: Print rmem_tensor(0, 0)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 0)" << std::endl;
 
-    std::cout << "=== Exercise Complete ===" << std::endl;
-    std::cout << "Key Learnings:" << std::endl;
-    std::cout << "1. Different memory spaces have different characteristics" << std::endl;
-    std::cout << "2. Use pointer wrappers to specify memory space" << std::endl;
-    std::cout << "3. Efficient kernels move data: gmem -> smem -> rmem" << std::endl;
-    std::cout << "4. Choose memory space based on access pattern and scope" << std::endl;
+  std::cout << "Sample access - tensor(3, 3) = ";
+  // TODO: Print rmem_tensor(3, 3)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 1500)" << std::endl;
+  std::cout << std::endl;
 
-    return 0;
+
+  // ========================================================================
+  // TASK 4: Compare memory space characteristics
+  // ========================================================================
+  // Goal: Fill in the comparison table with your understanding
+  std::cout << "Task 4 - Memory Space Comparison:" << std::endl;
+  std::cout << std::endl;
+  std::cout << "| Property      | Global    | Shared    | Register  |" << std::endl;
+  std::cout << "|---------------|-----------|-----------|-----------|" << std::endl;
+  
+  // TODO: Fill in the size comparison (approximate orders of magnitude)
+  // Hint: Global = GBs, Shared = KBs/MBs, Register = KBs per thread
+  std::cout << "| Size          | ___       | ___       | ___       |" << std::endl;
+  
+  // TODO: Fill in the latency comparison
+  // Hint: Global = High (~400-800 cycles), Shared = Low, Register = Lowest
+  std::cout << "| Latency       | ___       | ___       | ___       |" << std::endl;
+  
+  // TODO: Fill in the scope comparison
+  // Hint: Global = All threads, Shared = Block, Register = Thread
+  std::cout << "| Scope         | ___       | ___       | ___       |" << std::endl;
+  
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // TASK 5: Simulate data movement: Global -> Shared -> Register
+  // ========================================================================
+  // Goal: Copy data from gmem tensor to smem tensor to rmem tensor
+  // This simulates the pattern used in CUDA kernels
+  std::cout << "Task 5 - Simulated Data Movement:" << std::endl;
+  std::cout << "Pattern: Global -> Shared -> Register -> Compute" << std::endl;
+  std::cout << std::endl;
+
+  // Create fresh tensors for data movement
+  float source_data[32];
+  for (int i = 0; i < 32; ++i) {
+    source_data[i] = static_cast<float>(i + 100);
+  }
+  auto source_layout = make_layout(make_shape(Int<4>{}, Int<8>{}), GenRowMajor{});
+  auto source_tensor = make_tensor(make_gmem_ptr(source_data), source_layout);
+
+  float stage1_data[32] = {0};
+  auto stage1_tensor = make_tensor(make_smem_ptr(stage1_data), source_layout);
+
+  float stage2_data[16] = {0};
+  auto stage2_layout = make_layout(make_shape(Int<4>{}, Int<4>{}), GenRowMajor{});
+  auto stage2_tensor = make_tensor(make_rmem_ptr(stage2_data), stage2_layout);
+
+  std::cout << "Step 1: Load from Global to Shared (4x8 tile)" << std::endl;
+  // TODO: Copy all elements from source_tensor to stage1_tensor
+  // Use nested loops to copy element by element
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  Copy complete" << std::endl;
+
+  // Verify the copy
+  std::cout << "  Verify stage1(2, 3) = ";
+  // TODO: Print stage1_tensor(2, 3) - should be 119
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 119)" << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "Step 2: Load from Shared to Register (4x4 tile)" << std::endl;
+  // TODO: Copy the top-left 4x4 from stage1_tensor to stage2_tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  Copy complete" << std::endl;
+
+  // Verify the copy
+  std::cout << "  Verify stage2(1, 2) = ";
+  // TODO: Print stage2_tensor(1, 2) - should be 110
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 110)" << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "Step 3: Print register tensor contents" << std::endl;
+  // TODO: Print all 16 elements of stage2_tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // TASK 6: Understand pointer wrapper functions
+  // ========================================================================
+  // Goal: Match each wrapper with its purpose
+  std::cout << "Task 6 - Pointer Wrapper Functions:" << std::endl;
+  std::cout << "Match each function with its purpose:" << std::endl;
+  std::cout << std::endl;
+  
+  std::cout << "1. make_gmem_ptr(ptr)" << std::endl;
+  std::cout << "   Purpose: ";
+  // TODO: Write a brief description
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "2. make_smem_ptr(ptr)" << std::endl;
+  std::cout << "   Purpose: ";
+  // TODO: Write a brief description
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "3. make_rmem_ptr(ptr)" << std::endl;
+  std::cout << "   Purpose: ";
+  // TODO: Write a brief description
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // CHALLENGE: Choose the right memory space
+  // ========================================================================
+  std::cout << "=== Challenge: Choose the Right Memory Space ===" << std::endl;
+  std::cout << "For each scenario, write which memory space you would use:" << std::endl;
+  std::cout << "(gmem, smem, or rmem)" << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "Scenario 1: Input matrix A for GEMM (large, read by all blocks)" << std::endl;
+  std::cout << "  Answer: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "Scenario 2: A tile of matrix A shared by threads in a block" << std::endl;
+  std::cout << "  Answer: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "Scenario 3: Accumulator for a thread's partial results" << std::endl;
+  std::cout << "  Answer: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "Scenario 4: Output matrix C for GEMM" << std::endl;
+  std::cout << "  Answer: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  std::cout << "Scenario 5: A small lookup table used by all threads" << std::endl;
+  std::cout << "  Answer: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // Summary
+  // ========================================================================
+  std::cout << "=== Exercise Complete ===" << std::endl;
+  std::cout << "Key Learnings:" << std::endl;
+  std::cout << "1. What are the three main CUDA memory spaces?" << std::endl;
+  std::cout << "2. Which pointer wrapper is used for each memory space?" << std::endl;
+  std::cout << "3. What is the typical data flow in a CUDA kernel?" << std::endl;
+  std::cout << "4. Why is shared memory faster than global memory?" << std::endl;
+
+  return 0;
 }

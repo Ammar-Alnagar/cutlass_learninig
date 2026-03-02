@@ -3,18 +3,20 @@
  *
  * Objective: Learn to create CuTe tensors by wrapping raw pointers with layouts
  *
- * Tasks:
- * 1. Create a tensor from a raw pointer and layout
- * 2. Understand the relationship between tensor, layout, and data
- * 3. Access tensor elements using logical coordinates
- * 4. Practice with different data types
+ * Instructions:
+ * - Complete each TODO section by writing the CuTe code yourself
+ * - Do NOT look at solutions - derive them from the hints provided
+ * - Compile and run after each task to verify your implementation
+ * - Study the printed output to understand layout-to-memory mapping
  *
- * Key Functions:
+ * Key Functions to discover/use:
  * - make_tensor(ptr, layout) - Creates a tensor from pointer and layout
  * - make_gmem_ptr(ptr) - Wraps a global memory pointer
- * - make_smem_ptr(ptr) - Wraps a shared memory pointer
- * - tensor.layout() - Get the tensor's layout
- * - tensor.shape() - Get the tensor's shape
+ * - make_shape(...) - Creates a shape from dimensions
+ * - make_stride(...) - Creates a stride from values
+ * - GenRowMajor{}, GenColMajor{} - Layout generators
+ * - Int<N>{} - Compile-time integer constant
+ * - print(tensor), print_layout(layout) - Debug printing
  */
 
 #include "cute/layout.hpp"
@@ -29,143 +31,256 @@ int main() {
             << std::endl;
   std::cout << std::endl;
 
-  // TASK 1: Create a simple 1D tensor
-  float data_1d[256];
-  for (int i = 0; i < 256; ++i) {
-
+  // ========================================================================
+  // TASK 1: Create a 1D tensor from a raw pointer
+  // ========================================================================
+  // Given: A raw array of 16 floats initialized with values 0..15
+  // Goal: Wrap it with a CuTe layout and create a tensor
+  // Hint: Use make_shape(Int<16>{}) and GenRowMajor{}
+  std::cout << "Task 1 - Create a 1D Tensor:" << std::endl;
+  
+  float data_1d[16];
+  for (int i = 0; i < 16; ++i) {
     data_1d[i] = static_cast<float>(i);
   }
 
-  // TODO: Create a 1D layout and tensor
-  // auto layout_1d = make_layout(make_shape(Int<16>{}), GenRowMajor{});
-  // auto tensor_1d = make_tensor(make_gmem_ptr(data_1d), layout_1d);
+  // TODO: Create a 1D layout for 16 elements
+  // TODO: Create a tensor by wrapping data_1d with your layout
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-  Layout layout_1d =
-      make_layout(make_shape(Int<16>{}, Int<16>{}), GenRowMajor{});
-  Tensor tensor_1d = make_tensor(make_gmem_ptr(data_1d), layout_1d);
-  std::cout << "Task 1 - 1D Tensor:" << std::endl;
-  std::cout << "TODO: Create and print a 1D tensor" << std::endl;
+  std::cout << "Your 1D tensor:" << std::endl;
+  // TODO: Print your tensor using print()
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
   std::cout << std::endl;
-  print_layout(layout_1d);
-  std::cout << "----------------" << std::endl;
-  print(tensor_1d);
-  std::cout << "----------------" << std::endl;
 
-  // TASK 2: Create a 2D tensor (4x4 matrix)
+
+  // ========================================================================
+  // TASK 2: Create a 2D row-major tensor (4x4 matrix)
+  // ========================================================================
+  // Given: A raw array of 16 floats
+  // Goal: Create a 4x4 row-major tensor
+  // Hint: make_shape(Int<4>{}, Int<4>{}) with GenRowMajor{}
+  std::cout << "Task 2 - Create a 2D Row-Major Tensor (4x4):" << std::endl;
+  
   float data_2d[16];
   for (int i = 0; i < 16; ++i) {
-    data_2d[i] = static_cast<float>(i);
+    data_2d[i] = static_cast<float>(i * 10);
   }
 
-  // TODO: Create a 2D row-major layout and tensor
-  // auto layout_2d = make_layout(make_shape(Int<4>{}, Int<4>{}),
-  // GenRowMajor{}); auto tensor_2d = make_tensor(make_gmem_ptr(data_2d),
-  // layout_2d);
+  // TODO: Create a 4x4 row-major layout
+  // TODO: Create a tensor wrapping data_2d
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-  Layout layout_2d = make_layout(make_shape(Int<4>{}, Int<4>{}), GenRowMajor{});
-  Tensor tensor_2d = make_tensor(make_gmem_ptr(data_2d), layout_2d);
-
-  std::cout << "Task 2 - 2D Tensor (4x4):" << std::endl;
-  std::cout << "TODO: Create and print a 2D tensor" << std::endl;
-  std::cout << std::endl;
-  print_layout(layout_2d);
-  std::cout << "----------------" << std::endl;
-  print(tensor_2d);
-  std::cout << "----------------" << std::endl;
-
-  // TASK 3: Access tensor elements using coordinates
-  std::cout << "Task 3 - Tensor Element Access:" << std::endl;
-  std::cout << "Accessing elements using tensor(row, col) syntax:" << std::endl;
-  std::cout << tensor_1d(1, 2) << std::endl;
-  // print_layout(tensor_1d.layout());
-
-  // Example access (uncomment after creating tensor_2d)
-  std::cout << "  tensor(0, 0) = " << tensor_2d(0, 0) << std::endl;
-  std::cout << "  tensor(1, 2) = " << tensor_2d(1, 2) << std::endl;
-  std::cout << "  tensor(3, 3) = " << tensor_2d(3, 3) << std::endl;
-  std::cout << "TODO: Access and print tensor elements" << std::endl;
+  std::cout << "Your 2D row-major tensor:" << std::endl;
+  // TODO: Print your tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
   std::cout << std::endl;
 
-  // TASK 4: Create a tensor with column-major layout
+
+  // ========================================================================
+  // TASK 3: Access specific elements from your 2D tensor
+  // ========================================================================
+  // Goal: Use tensor(row, col) syntax to access elements
+  // Verify: Check that your accesses match expected values
+  std::cout << "Task 3 - Access Tensor Elements:" << std::endl;
+  std::cout << "Access the following positions and print the values:" << std::endl;
+  std::cout << "  Position (0, 0): ";
+  // TODO: Print tensor_2d(0, 0)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 0)" << std::endl;
+
+  std::cout << "  Position (1, 2): ";
+  // TODO: Print tensor_2d(1, 2)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 12)" << std::endl;
+
+  std::cout << "  Position (3, 3): ";
+  // TODO: Print tensor_2d(3, 3)
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 30)" << std::endl;
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // TASK 4: Create a column-major tensor (4x3 matrix)
+  // ========================================================================
+  // Given: A raw array of 12 floats
+  // Goal: Create a 4x3 column-major tensor
+  // Hint: GenColMajor{} creates column-major layout
+  std::cout << "Task 4 - Create a Column-Major Tensor (4x3):" << std::endl;
+  
   float data_cm[12];
   for (int i = 0; i < 12; ++i) {
-    data_cm[i] = static_cast<float>(i * 2);
+    data_cm[i] = static_cast<float>(i + 100);
   }
 
-  // TODO: Create a column-major tensor
-  // auto layout_cm = make_layout(make_shape(Int<4>{}, Int<3>{}),
-  // GenColMajor{}); auto tensor_cm = make_tensor(make_gmem_ptr(data_cm),
-  // layout_cm);
-  Layout layout_cm = make_layout(make_shape(Int<4>{}, Int<3>{}));
-  Tensor tensor_cm = make_tensor(make_gmem_ptr(data_cm), layout_cm);
-  std::cout << "Task 4 - Column-Major Tensor (4x3):" << std::endl;
-  std::cout << "TODO: Create and print a column-major tensor" << std::endl;
-  std::cout << std::endl;
-  print_tensor(tensor_cm);
-  std::cout << "---" << std::endl;
-  std::cout << tensor_cm(1, 2) << std::endl;
-  std::cout << "---" << std::endl;
+  // TODO: Create a 4x3 column-major layout
+  // TODO: Create a tensor wrapping data_cm
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-  // TASK 5: Create a tensor with custom stride (padded)
-  float data_padded[36]; // 4x9 with padding
+  std::cout << "Your column-major tensor:" << std::endl;
+  // TODO: Print your tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+  // TODO: Access and print element at position (1, 2)
+  // Hint: In column-major, element (1,2) has offset = 1 + 2*4 = 9
+  std::cout << "Element at (1, 2): ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 109)" << std::endl;
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // TASK 5: Create a tensor with custom stride (padded layout)
+  // ========================================================================
+  // Given: A raw array of 36 floats (enough for 4x9)
+  // Goal: Create a 4x8 tensor with stride=9 (1 element padding per row)
+  // Hint: make_stride(Int<9>{}, Int<1>{}) for row stride=9, col stride=1
+  std::cout << "Task 5 - Create a Padded Tensor (4x8 with stride=9):" << std::endl;
+  
+  float data_padded[36];
   for (int i = 0; i < 36; ++i) {
     data_padded[i] = static_cast<float>(i);
   }
 
-  // TODO: Create a padded tensor (4 rows, 8 columns, stride=9)
-  // auto layout_padded = make_layout(make_shape(Int<4>{}, Int<8>{}),
-  // make_stride(Int<9>{}, Int<1>{})); auto tensor_padded =
-  // make_tensor(make_gmem_ptr(data_padded), layout_padded);
-  //
+  // TODO: Create a layout with shape (4, 8) and stride (9, 1)
+  // TODO: Create a tensor wrapping data_padded
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-  auto padded_layout = make_layout(make_shape(Int<4>{}, Int<8>{}),
-                                   make_stride(Int<9>{}, Int<1>{}));
-  auto padded_tensor = make_tensor(make_gmem_ptr(data_padded), padded_layout);
-
-  std::cout << "Task 5 - Padded Tensor (4x8 with stride=9):" << std::endl;
-  std::cout << "TODO: Create and print a padded tensor" << std::endl;
-  std::cout << std::endl;
-  print_tensor(padded_tensor);
-  print(padded_tensor(0, 5));
-
-  // TASK 6: Verify tensor properties
-  std::cout << "=== Tensor Properties Verification ===" << std::endl;
-  std::cout << "For a 4x4 row-major tensor:" << std::endl;
-  std::cout << "  Shape should be (4, 4)" << std::endl;
-  std::cout << "  Stride should be (4, 1)" << std::endl;
-  std::cout << "  Total elements: 16" << std::endl;
+  std::cout << "Your padded tensor:" << std::endl;
+  // TODO: Print your tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
   std::cout << std::endl;
 
-  // CHALLENGE: Create a 3D tensor
-  std::cout << "=== Challenge: 3D Tensor ===" << std::endl;
+  // TODO: Access element at (2, 5) - what value do you get?
+  // Hint: offset = 2*9 + 5*1 = 23
+  std::cout << "Element at (2, 5): ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 23)" << std::endl;
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // TASK 6: Verify tensor properties (shape and stride)
+  // ========================================================================
+  // Goal: Extract and print the shape and stride from your tensor's layout
+  // Hint: tensor.layout().shape() and tensor.layout().stride()
+  std::cout << "Task 6 - Verify Tensor Properties:" << std::endl;
+  std::cout << "For the 4x4 row-major tensor from Task 2:" << std::endl;
+  
+  // TODO: Print the shape of tensor_2d
+  std::cout << "  Shape: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: (4, 4))" << std::endl;
+
+  // TODO: Print the stride of tensor_2d
+  std::cout << "  Stride: ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: (4, 1))" << std::endl;
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // CHALLENGE: Create a 3D tensor (2x3x4)
+  // ========================================================================
+  // Given: A raw array of 24 floats
+  // Goal: Create a 3D tensor with shape (2, 3, 4) in row-major order
+  // Hint: make_shape(Int<2>{}, Int<3>{}, Int<4>{}) with GenRowMajor{}
+  std::cout << "=== Challenge: Create a 3D Tensor (2x3x4) ===" << std::endl;
+  
   float data_3d[24];
   for (int i = 0; i < 24; ++i) {
     data_3d[i] = static_cast<float>(i);
   }
 
-  std::cout << "Create a 3D tensor with shape (2, 3, 4):" << std::endl;
-  std::cout << "TODO: Create layout and tensor for 3D data" << std::endl;
-  // auto layout_3d = make_layout(make_shape(Int<2>{}, Int<3>{}, Int<4>{}),
-  // GenRowMajor{}); auto tensor_3d = make_tensor(make_gmem_ptr(data_3d),
-  // layout_3d);
+  // TODO: Create a 3D row-major layout with shape (2, 3, 4)
+  // TODO: Create a tensor wrapping data_3d
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
 
-  auto layout_3d =
-      make_layout(make_shape(Int<2>{}, Int<3>{}, Int<4>{}), GenRowMajor{});
-  auto tensor_3d = make_tensor(make_gmem_ptr(data_3d), layout_3d);
-
-  std::cout << tensor_3d << std::endl;
-  std::cout << tensor_3d(0, 1, 2) << std::endl;
+  std::cout << "Your 3D tensor:" << std::endl;
+  // TODO: Print your 3D tensor
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
   std::cout << std::endl;
-  print(tensor_3d.layout());
-  print("\n");
-  print_tensor(tensor_3d);
+
+  // TODO: Access element at position (0, 1, 2)
+  // Hint: In row-major (2,3,4), offset = 0*12 + 1*4 + 2 = 6
+  std::cout << "Element at (0, 1, 2): ";
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << "  (expected: 6)" << std::endl;
+
+  // TODO: Print the layout of your 3D tensor to see its structure
+  std::cout << "3D tensor layout:" << std::endl;
+  // START YOUR CODE HERE
+  
+  
+  // END YOUR CODE HERE
+  std::cout << std::endl;
+
+
+  // ========================================================================
+  // Summary
+  // ========================================================================
   std::cout << "=== Exercise Complete ===" << std::endl;
-  std::cout << "Key Learnings:" << std::endl;
-  std::cout << "1. Tensors wrap raw pointers with layouts" << std::endl;
-  std::cout << "2. Access elements using tensor(coord) syntax" << std::endl;
-  std::cout << "3. Layout determines how coordinates map to memory"
-            << std::endl;
-  std::cout << "4. Same data can be viewed with different layouts" << std::endl;
+  std::cout << "Reflect on what you learned:" << std::endl;
+  std::cout << "1. How does make_tensor() wrap a raw pointer?" << std::endl;
+  std::cout << "2. What is the relationship between shape, stride, and memory offset?" << std::endl;
+  std::cout << "3. How does row-major differ from column-major in memory?" << std::endl;
+  std::cout << "4. Why would you use a padded/padded layout?" << std::endl;
 
   return 0;
 }
