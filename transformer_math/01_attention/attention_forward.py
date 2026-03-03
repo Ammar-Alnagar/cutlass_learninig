@@ -31,7 +31,7 @@ print()
 
 # Create random Q, K, V with proper shapes
 # In practice, these come from QKV projections: Q = X @ W_Q
-rng = np.random.default_rng(42)
+rng = np.random.Generator(np.random.PCG64(42))
 Q = rng.standard_normal((B, H, S, d_h)).astype(np.float32)
 K = rng.standard_normal((B, H, S, d_h)).astype(np.float32)
 V = rng.standard_normal((B, H, S, d_h)).astype(np.float32)
@@ -91,7 +91,12 @@ print()
 print("Causal Masking:")
 # Create causal mask: upper triangular is masked (set to -inf)
 # Token i can only attend to tokens j <= i
-mask = np.triu(np.ones((S, S)), k=1) * (-np.inf)
+# Use a large negative number instead of -inf to avoid NaN issues
+mask = np.zeros((S, S), dtype=np.float32)
+for i in range(S):
+    for j in range(S):
+        if j > i:
+            mask[i, j] = -1e9  # Large negative instead of -inf
 print(f"  Causal mask shape: {mask.shape}")  # [S, S]
 print(f"  Causal mask (S={S}x{S}):")
 print("  " + str(mask))
