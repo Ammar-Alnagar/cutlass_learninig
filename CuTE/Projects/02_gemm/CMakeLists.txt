@@ -14,7 +14,7 @@ set(CUTLASS_PATHS
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../cutlass/include"
     "/usr/local/cutlass/include"
 )
-find_path(CUTLASS_INCLUDE_DIR NAMES cute/cute.hpp PATHS ${CUTLASS_PATHS})
+find_path(CUTLASS_INCLUDE_DIR NAMES cute/tensor.hpp PATHS ${CUTLASS_PATHS})
 
 if(NOT CUTLASS_INCLUDE_DIR)
     message(FATAL_ERROR "CUTLASS not found.")

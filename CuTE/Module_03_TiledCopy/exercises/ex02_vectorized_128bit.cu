@@ -18,7 +18,7 @@
 
 #include <cuda_runtime.h>
 #include <cutlass/cutlass.h>
-#include <cute/cute.hpp>
+#include <cute/tensor.hpp>
 #include <nvtx3/nvToolsExt.h>
 #include <iostream>
 #include <iomanip>

@@ -8,7 +8,7 @@
 #include <cmath>
 #include <iomanip>
 
-#include <cute/cute.hpp>
+#include <cute/tensor.hpp>
 #include <cute/tensor.hpp>
 
 namespace cute {

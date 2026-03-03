@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include <cute/cute.hpp>
+#include <cute/tensor.hpp>
 #include <cute/tensor.hpp>
 
 namespace cute {

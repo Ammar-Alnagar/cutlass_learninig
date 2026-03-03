@@ -16,7 +16,7 @@ set(CUTLASS_PATHS
     "/usr/local/cutlass/include"
 )
 find_path(CUTLASS_INCLUDE_DIR 
-    NAMES cute/cute.hpp
+    NAMES cute/tensor.hpp
     PATHS ${CUTLASS_PATHS}
 )
 

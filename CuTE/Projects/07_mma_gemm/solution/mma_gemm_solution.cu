@@ -10,7 +10,7 @@
 #include <vector>
 #include <cmath>
 
-#include <cute/cute.hpp>
+#include <cute/tensor.hpp>
 #include <cute/tensor.hpp>
 #include <cute/atom/mma_atom.hpp>
 

@@ -12,7 +12,7 @@
 #include <iomanip>
 #include <limits>
 
-#include <cute/cute.hpp>
+#include <cute/tensor.hpp>
 #include <cute/tensor.hpp>
 
 namespace cute {
