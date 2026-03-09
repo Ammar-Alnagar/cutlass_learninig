@@ -1,0 +1,52 @@
+# CUTLASS 3.x CMake Template
+# Reusable CMakeLists.txt for all exercises
+
+cmake_minimum_required(VERSION 3.20)
+project(cutlass_exercise CUDA CXX)
+
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_ARCHITECTURES "80;90;100")
+
+# CUTLASS include path
+if(NOT DEFINED CUTLASS_DIR)
+    set(CUTLASS_DIR "$ENV{CUTLASS_DIR}" CACHE PATH "Path to CUTLASS repository")
+endif()
+
+if(NOT EXISTS "${CUTLASS_DIR}/include/cutlass/cutlass.h")
+    message(FATAL_ERROR 
+        "CUTLASS not found at ${CUTLASS_DIR}. "
+        "Set CUTLASS_DIR or export CUTLASS_DIR=/path/to/cutlass")
+endif()
+
+message(STATUS "CUTLASS_DIR: ${CUTLASS_DIR}")
+
+# Include directories
+include_directories(
+    ${CUTLASS_DIR}/include
+    ${CUTLASS_DIR}/tools/util/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../utils
+)
+
+# Compiler flags
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
+set(CMAKE_CUDA_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_CUDA_FLAGS_DEBUG "-G -g -O0")
+
+# Default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Helper function to add CUDA exercise
+function(add_cutlass_exercise NAME SOURCE)
+    add_executable(${NAME} ${SOURCE})
+    set_target_properties(${NAME} PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    )
+    target_compile_options(${NAME} PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math>
+        $<$<COMPILE_LANGUAGE:CUDA>:--ptxas-options=-v>
+    )
+endfunction()
