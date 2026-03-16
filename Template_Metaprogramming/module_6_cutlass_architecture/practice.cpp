@@ -5,6 +5,7 @@
 
 // Module 6: Introduction to CUTLASS Architecture Practice
 // Hands-on tutorial for CUTLASS 3.x architecture concepts
+// TODO: Implement each exercise to learn CUTLASS architecture
 
 /*
  * EXERCISE 1: CUTLASS 3.x ARCHITECTURE OVERVIEW

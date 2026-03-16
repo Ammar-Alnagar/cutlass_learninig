@@ -4,38 +4,45 @@
 #include <memory>
 #include <utility>
 #include <string>
+#include <fstream>
 
 // Module 1: Foundations Practice
 // Hands-on tutorial for modern C++ features needed for template metaprogramming
+// TODO: Implement each exercise to learn modern C++ features
 
 /*
  * EXERCISE 1: AUTO KEYWORD PRACTICE
  * Learn how the auto keyword performs type deduction
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand how auto deduces types from initializers
+ * - See how auto works with complex types like iterators
+ * - Learn about auto with references and const qualifiers
  */
 void exercise_auto_keyword() {
     std::cout << "\n=== Exercise 1: Auto Keyword ===" << std::endl;
 
-    // Basic type deduction
-    auto x = 42;           // x is int
-    auto y = 42.5;         // y is double
-    auto z = "hello";      // z is const char*
+    // Basic type deduction - TODO: Determine what types these variables will have
+    auto x = 42;           // TODO: What type is x? (Hint: look at the initializer)
+    auto y = 42.5;         // TODO: What type is y?
+    auto z = "hello";      // TODO: What type is z? (Hint: string literals have a specific type)
 
     std::cout << "x = " << x << " (type deduced as int)" << std::endl;
     std::cout << "y = " << y << " (type deduced as double)" << std::endl;
     std::cout << "z = " << z << " (type deduced as const char*)" << std::endl;
 
-    // With complex types
+    // With complex types - TODO: Understand how auto works with STL containers
     std::vector<int> vec = {1, 2, 3, 4, 5};
-    auto it = vec.begin(); // it is std::vector<int>::iterator
+    auto it = vec.begin(); // TODO: What type is it? (Hint: it's an iterator type)
     std::cout << "First element via iterator: " << *it << std::endl;
 
-    // Using auto with references
-    auto& ref_x = x;       // ref_x is int&
+    // Using auto with references - TODO: See how references work with auto
+    auto& ref_x = x;       // TODO: What type is ref_x? (Hint: the & makes it a reference)
     ref_x = 100;
     std::cout << "After modifying ref_x, x = " << x << std::endl;
 
-    // Using auto with const
-    const auto cx = x;     // cx is const int
+    // Using auto with const - TODO: Understand how const works with auto
+    const auto cx = x;     // TODO: What type is cx? (Hint: const makes it read-only)
     std::cout << "cx = " << cx << " (const int)" << std::endl;
 }
 
@@ -429,7 +436,7 @@ int main() {
 
     // Challenge 2
     {
-        SimplePtr<int> sp = std::make_unique<int>(100).release(); // Manual memory management for demo
+        SimplePtr<int> sp(std::make_unique<int>(100).release()); // Manual memory management for demo
         if(sp.get()) {
             std::cout << "Challenge 2 - SimplePtr: " << *sp << std::endl;
         }

@@ -11,16 +11,24 @@
 
 // Module 4: Advanced Template Metaprogramming Techniques Practice
 // Hands-on tutorial for sophisticated TMP patterns and techniques
+// TODO: Implement each exercise to learn advanced template metaprogramming
 
 /*
  * EXERCISE 1: TEMPLATE METAPROGRAMMING PATTERNS
  * Implementing common TMP patterns like Enable-if, Tag dispatching, and Policy-based design
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand how to use SFINAE (Substitution Failure Is Not An Error) with std::enable_if
+ * - Learn tag dispatching for selecting different implementations based on types
+ * - See how policy-based design enables customizable behavior through template parameters
  */
-// Enable-If Pattern
+// TODO: Implement safe multiplication that handles different types differently
+// Hint: Use std::enable_if to create type-specific overloads
 template<typename T>
 std::enable_if_t<std::is_integral_v<T>, T>
 multiply_safe(T a, T b) {
-    // Safe multiplication for integers
+    // Safe multiplication for integers - check for overflow
+    // TODO: What condition checks for multiplication overflow?
     if (a != 0 && b > std::numeric_limits<T>::max() / a) {
         throw std::overflow_error("Multiplication overflow");
     }
@@ -31,7 +39,8 @@ template<typename T>
 std::enable_if_t<std::is_floating_point_v<T>, T>
 multiply_safe(T a, T b) {
     // Different logic for floating-point types
-    return a * b;  // Floating-point handles overflow differently
+    // TODO: Why don't we need overflow checking for floating-point?
+    return a * b;  // Floating-point handles overflow differently (to infinity)
 }
 
 // Multiple conditions
@@ -94,7 +103,11 @@ struct heap_policy {
 struct stack_policy {
     template<typename T>
     static T* allocate(size_t n) {
-        static_assert(n <= 1024, "Stack allocation too large");
+        // TODO: Replace static_assert with runtime check since n is a runtime parameter
+        // Hint: What should we do if the requested size is too large?
+        if (n > 1024) {
+            throw std::length_error("Stack allocation too large");
+        }
         thread_local static T buffer[1024];
         return buffer;
     }
@@ -282,13 +295,182 @@ void exercise_expression_templates() {
 }
 
 /*
- * EXERCISE 3: COMPILE-TIME COMPUTATIONS
- * Advanced compile-time algorithms and data structures
+ * EXERCISE 1: TEMPLATE METAPROGRAMMING PATTERNS
+ * Implementing common TMP patterns like Enable-if, Tag dispatching, and Policy-based design
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand how to use SFINAE (Substitution Failure Is Not An Error) with std::enable_if
+ * - Learn tag dispatching for selecting different implementations based on types
+ * - See how policy-based design enables customizable behavior through template parameters
  */
-// Compile-time greatest common divisor
-template<int A, int B>
-struct GCD {
-    static constexpr int value = GCD<B, A % B>::value;
+// TODO: Implement safe multiplication that handles different types differently
+// Hint: Use std::enable_if to create type-specific overloads
+template<typename T>
+std::enable_if_t<std::is_integral_v<T>, T>
+multiply_safe(T a, T b) {
+    // Safe multiplication for integers - check for overflow
+    // TODO: What condition checks for multiplication overflow?
+    if (a != 0 && b > std::numeric_limits<T>::max() / a) {
+        throw std::overflow_error("Multiplication overflow");
+    }
+    return a * b;
+}
+
+template<typename T>
+std::enable_if_t<std::is_floating_point_v<T>, T>
+multiply_safe(T a, T b) {
+    // Different logic for floating-point types
+    // TODO: Why don't we need overflow checking for floating-point?
+    return a * b;  // Floating-point handles overflow differently (to infinity)
+}
+
+// Multiple conditions
+// TODO: Implement a function that only works for large arithmetic types (>= 4 bytes)
+// Hint: Combine multiple type traits with && in std::enable_if
+template<typename T>
+std::enable_if_t<std::is_arithmetic_v<T> && sizeof(T) >= 4, T>
+process_large_numbers(T value) {
+    // Process only large arithmetic types
+    // TODO: Why would we want to restrict this to only large types?
+    return value * 2;
+}
+
+// Tag Dispatching Pattern
+// TODO: Define tags for different iterator categories
+// Hint: These are empty structs used purely for type dispatching
+struct random_access_tag {};
+struct bidirectional_tag {};
+struct forward_tag {};
+
+// Implementation for random access iterators
+// TODO: Complete this implementation for random access iterators (should be O(1))
+// Hint: Random access iterators can jump directly to any position
+template<typename Iterator>
+void advance_impl(Iterator& it, int n, random_access_tag) {
+    // TODO: Implement random access iterator advancement (should be O(1))
+    // For random access iterators, we can just add n to the iterator
+    it += n;  // O(1) operation
+}
+
+// Implementation for bidirectional iterators
+// TODO: Complete this implementation for bidirectional iterators
+// Hint: Bidirectional iterators can move both forward and backward, but only one step at a time
+template<typename Iterator>
+void advance_impl(Iterator& it, int n, bidirectional_tag) {
+    if (n >= 0) {
+        // TODO: Implement forward traversal (move forward n steps)
+        while (n--) ++it;
+    } else {
+        // TODO: Implement backward traversal (move backward |n| steps)
+        while (n++) --it;
+    }
+}
+
+// Implementation for forward iterators
+// TODO: Complete this implementation for forward iterators (can only move forward)
+// Hint: Forward iterators can only move forward, one step at a time
+template<typename Iterator>
+void advance_impl(Iterator& it, int n, forward_tag) {
+    // TODO: Implement forward-only movement
+    // Only forward movement allowed, and we need to check n > 0
+    while (n-- > 0) ++it;
+}
+
+// Public interface that dispatches based on iterator category
+// TODO: Understand how this selects the right implementation based on iterator type
+// Hint: std::iterator_traits::iterator_category gives us the category of an iterator
+template<typename Iterator>
+void advance(Iterator& it, int n) {
+    // TODO: Get the iterator category tag for dispatch
+    // This extracts the category tag from the iterator type
+    using category = typename std::iterator_traits<Iterator>::iterator_category;
+    // TODO: Dispatch to the appropriate implementation based on category
+    // The category{} creates a temporary object of the iterator's category type
+    advance_impl(it, n, category{});
+}
+
+// Policy-Based Design Pattern
+// Memory management policies
+// TODO: Understand how policies encapsulate different behaviors that can be swapped
+struct heap_policy {
+    template<typename T>
+    static T* allocate(size_t n) {
+        return new T[n];
+    }
+
+    template<typename T>
+    static void deallocate(T* ptr) {
+        delete[] ptr;
+    }
+};
+
+struct stack_policy {
+    template<typename T>
+    static T* allocate(size_t n) {
+        // TODO: Replace static_assert with runtime check since n is a runtime parameter
+        // Hint: What should we do if the requested size is too large?
+        if (n > 1024) {
+            throw std::length_error("Stack allocation too large");
+        }
+        thread_local static T buffer[1024];
+        return buffer;
+    }
+
+    template<typename T>
+    static void deallocate(T* ptr) {
+        // Nothing to do for stack allocation
+    }
+};
+
+// Threading policies
+// TODO: Understand how threading policies can enable different execution strategies
+struct single_threaded_policy {
+    template<typename Func>
+    static void parallel_for(size_t start, size_t end, Func&& f) {
+        for (size_t i = start; i < end; ++i) {
+            f(i);
+        }
+    }
+};
+
+// Container that uses policies
+// TODO: Understand how policies customize behavior through template parameters
+// This is the core of policy-based design: behavior is customized by template parameters
+template<typename T,
+         typename MemoryPolicy = heap_policy,
+         typename ThreadingPolicy = single_threaded_policy>
+class PolicyBasedContainer {
+private:
+    T* data;
+    size_t capacity;
+    size_t size_;
+
+public:
+    PolicyBasedContainer(size_t cap) : capacity(cap), size_(0) {
+        // TODO: Use the memory policy to allocate storage
+        // This is where the policy customizes behavior - different policies allocate differently
+        data = MemoryPolicy::allocate<T>(capacity);
+    }
+
+    ~PolicyBasedContainer() {
+        // TODO: Use the memory policy to deallocate storage
+        // Again, the policy customizes how deallocation happens
+        MemoryPolicy::deallocate(data);
+    }
+
+    void fill(const T& value) {
+        // TODO: Use the threading policy to parallelize the fill operation
+        // The threading policy determines how (or if) the loop is parallelized
+        ThreadingPolicy::parallel_for(0, capacity, [this, &value](size_t i) {
+            data[i] = value;
+        });
+        size_ = capacity;
+    }
+
+    T& operator[](size_t idx) { return data[idx]; }
+    const T& operator[](size_t idx) const { return data[idx]; }
+    size_t size() const { return size_; }
+    size_t capacity() const { return capacity; }
 };
 
 template<int A>

@@ -11,11 +11,90 @@
 
 // Module 2: Template Fundamentals Practice
 // Hands-on tutorial for template fundamentals needed for advanced metaprogramming
+// TODO: Implement each exercise to learn template fundamentals
 
 /*
  * EXERCISE 1: CLASS TEMPLATES
  * Creating generic classes that work with multiple types
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand how to create generic classes using template<typename T>
+ * - Learn how template parameters work in class definitions
+ * - See how to use template types in member functions and variables
+ * 
+ * INSTRUCTIONS:
+ * - Fill in the TODOs to implement a generic Stack class
+ * - Each TODO represents a part of the implementation you need to complete
+ * - Compare your implementation with the commented reference code
  */
+
+// TODO: Implement this stack class template
+template<typename T>
+class Stack {
+private:
+    // TODO: What data structure should we use to store elements?
+    std::vector<T> elements;  
+
+public:
+    // TODO: Implement the push function to add an element to the stack
+    void push(const T& element) {
+        // TODO: Add element to the data structure
+        elements.push_back(element);
+        // TODO: Print what was pushed (for debugging)
+        std::cout << "Pushed: " << element << std::endl;
+    }
+
+    // TODO: Implement the pop function to remove the top element
+    void pop() {
+        // TODO: Check if stack is not empty
+        if (!elements.empty()) {
+            // TODO: Show what we're popping (for debugging)
+            std::cout << "Popped: " << elements.back() << std::endl;
+            // TODO: Remove the top element
+            elements.pop_back();
+        } else {
+            // TODO: Handle empty stack case
+            std::cout << "Stack is empty, cannot pop!" << std::endl;
+        }
+    }
+
+    // TODO: Implement the top function to peek at the top element
+    const T& top() const {
+        // TODO: Check if stack is not empty
+        if (!elements.empty()) {
+            // TODO: Return the top element
+            return elements.back();
+        }
+        // TODO: Throw exception for empty stack
+        throw std::out_of_range("Stack is empty");
+    }
+
+    // TODO: Implement the empty function to check if stack has elements
+    bool empty() const {
+        // TODO: Return true if no elements, false otherwise
+        return elements.empty();
+    }
+
+    // TODO: Implement the size function to get number of elements
+    size_t size() const {
+        // TODO: Return the number of elements
+        return elements.size();
+    }
+
+    // TODO: Implement the print function to display all elements
+    void print() const {
+        // TODO: Print all elements in the stack
+        std::cout << "Stack contents: ";
+        for(const auto& elem : elements) {
+            std::cout << elem << " ";
+        }
+        std::cout << std::endl;
+    }
+};
+
+// Original implementations kept as reference for learning
+// Uncomment the following code to see a working implementation
+/*
 template<typename T>
 class Stack {
 private:
@@ -59,19 +138,23 @@ public:
         std::cout << std::endl;
     }
 };
+*/
 
+// TODO: Implement this hash map class template with multiple parameters
 // Template class with multiple parameters
 template<typename Key, typename Value, typename Hash = std::hash<Key>>
 class SimpleHashMap {
 private:
-    std::vector<std::pair<Key, Value>> data;
+    std::vector<std::pair<Key, Value>> data;  // TODO: What data structure should we use?
 
 public:
+    // TODO: Implement insert function
     void insert(const Key& k, const Value& v) {
         // Simple implementation without collision handling
         data.emplace_back(k, v);
     }
 
+    // TODO: Implement find function
     bool find(const Key& k, Value& v) const {
         for(const auto& pair : data) {
             if(pair.first == k) {
@@ -82,17 +165,20 @@ public:
         return false;
     }
 
+    // TODO: Implement size function
     size_t size() const { return data.size(); }
 };
 
+// TODO: Implement this fixed array class template with non-type parameter
 // Template class with non-type parameter
 template<typename T, size_t N>
 class FixedArray {
 private:
-    T data[N];
-    size_t count = 0;
+    T data[N];      // TODO: What type should data be? What does N represent?
+    size_t count = 0;  // TODO: What does count track?
 
 public:
+    // TODO: Implement push function
     void push(const T& element) {
         if(count < N) {
             data[count++] = element;
@@ -101,19 +187,25 @@ public:
         }
     }
 
+    // TODO: Implement operator[] for non-const objects
     T& operator[](size_t index) {
         if(index >= count) throw std::out_of_range("Index out of bounds");
         return data[index];
     }
 
+    // TODO: Implement operator[] for const objects
     const T& operator[](size_t index) const {
         if(index >= count) throw std::out_of_range("Index out of bounds");
         return data[index];
     }
 
+    // TODO: Implement size function
     size_t size() const { return count; }
+    
+    // TODO: Implement capacity function
     size_t capacity() const { return N; }
 
+    // TODO: Implement print function
     void print() const {
         std::cout << "FixedArray contents: ";
         for(size_t i = 0; i < count; ++i) {
@@ -126,7 +218,7 @@ public:
 void exercise_class_templates() {
     std::cout << "\n=== Exercise 1: Class Templates ===" << std::endl;
 
-    // Stack with integers
+    // TODO: Create a Stack of integers and test it
     Stack<int> int_stack;
     int_stack.push(42);
     int_stack.push(100);
@@ -294,16 +386,139 @@ void exercise_template_parameters() {
 }
 
 /*
- * EXERCISE 4: TEMPLATE SPECIALIZATION
- * Providing custom implementations for specific types
+ * EXERCISE 1: CLASS TEMPLATES
+ * Creating generic classes that work with multiple types
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand how to create generic classes using template<typename T>
+ * - Learn how template parameters work in class definitions
+ * - See how to use template types in member functions and variables
+ * - Understand template classes with multiple parameters
+ * - Learn about non-type template parameters (like size_t N)
  */
+// TODO: Implement this stack class template
 template<typename T>
-class Serializer {
+class Stack {
+private:
+    std::vector<T> elements;  // TODO: What type should elements be?
+
 public:
-    static void serialize(const T& obj, std::ostream& out) {
-        // Generic serialization
-        out << obj;
-        std::cout << "Generic serialization: " << obj << std::endl;
+    // TODO: Implement push function
+    void push(const T& element) {
+        elements.push_back(element);
+        std::cout << "Pushed: " << element << std::endl;
+    }
+
+    // TODO: Implement pop function
+    void pop() {
+        if (!elements.empty()) {
+            std::cout << "Popped: " << elements.back() << std::endl;
+            elements.pop_back();
+        } else {
+            std::cout << "Stack is empty, cannot pop!" << std::endl;
+        }
+    }
+
+    // TODO: Implement top function
+    const T& top() const {
+        if (!elements.empty()) {
+            return elements.back();
+        }
+        throw std::out_of_range("Stack is empty");
+    }
+
+    // TODO: Implement empty function
+    bool empty() const {
+        return elements.empty();
+    }
+
+    // TODO: Implement size function
+    size_t size() const {
+        return elements.size();
+    }
+
+    // TODO: Implement print function
+    void print() const {
+        std::cout << "Stack contents: ";
+        for(const auto& elem : elements) {
+            std::cout << elem << " ";
+        }
+        std::cout << std::endl;
+    }
+};
+
+// TODO: Implement this hash map class template with multiple parameters
+// Template class with multiple parameters
+template<typename Key, typename Value, typename Hash = std::hash<Key>>
+class SimpleHashMap {
+private:
+    std::vector<std::pair<Key, Value>> data;  // TODO: What data structure should we use?
+
+public:
+    // TODO: Implement insert function
+    void insert(const Key& k, const Value& v) {
+        // Simple implementation without collision handling
+        data.emplace_back(k, v);
+    }
+
+    // TODO: Implement find function
+    bool find(const Key& k, Value& v) const {
+        for(const auto& pair : data) {
+            if(pair.first == k) {
+                v = pair.second;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // TODO: Implement size function
+    size_t size() const { return data.size(); }
+};
+
+// TODO: Implement this fixed array class template with non-type parameter
+// Template class with non-type parameter
+template<typename T, size_t N>
+class FixedArray {
+private:
+    T data[N];      // TODO: What type should data be? What does N represent?
+    size_t count = 0;  // TODO: What does count track?
+
+public:
+    // TODO: Implement push function
+    void push(const T& element) {
+        if(count < N) {
+            data[count++] = element;
+        } else {
+            std::cout << "FixedArray is full!" << std::endl;
+        }
+    }
+
+    // TODO: Implement operator[] for non-const objects
+    T& operator[](size_t index) {
+        if(index >= count) throw std::out_of_range("Index out of bounds");
+        return data[index];
+    }
+
+    // TODO: Implement operator[] for const objects
+    const T& operator[](size_t index) const {
+        if(index >= count) throw std::out_of_range("Index out of bounds");
+        return data[index];
+    }
+
+    // TODO: Implement size function
+    size_t size() const { return count; }
+    
+    // TODO: Implement capacity function
+    size_t capacity() const { return N; }
+
+    // TODO: Implement print function
+    void print() const {
+        std::cout << "FixedArray contents: ";
+        for(size_t i = 0; i < count; ++i) {
+            std::cout << data[i] << " ";
+        }
+        std::cout << std::endl;
     }
 };
 

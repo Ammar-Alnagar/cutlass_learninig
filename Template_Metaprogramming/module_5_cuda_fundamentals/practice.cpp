@@ -6,14 +6,22 @@
 
 // Module 5: CUDA and GPU Programming Fundamentals Practice
 // Hands-on tutorial for GPU programming concepts necessary for CUTLASS
+// TODO: Implement each exercise to learn CUDA fundamentals
 
 /*
  * EXERCISE 1: GPU ARCHITECTURE BASICS
  * Understanding GPU vs CPU architecture and SIMT model
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand the fundamental differences between GPU and CPU architectures
+ * - Learn about the SIMT (Single Instruction, Multiple Thread) execution model
+ * - See why GPUs are well-suited for parallelizable workloads like matrix operations
  */
+// TODO: Implement this function to explain GPU architecture basics
 void exercise_gpu_architecture_basics() {
     std::cout << "\n=== Exercise 1: GPU Architecture Basics ===" << std::endl;
 
+    // TODO: Fill in the characteristics of CPUs vs GPUs
     std::cout << "GPU vs CPU characteristics:" << std::endl;
     std::cout << "CPU:" << std::endl;
     std::cout << "- Few powerful cores (4-64)" << std::endl;
@@ -29,6 +37,7 @@ void exercise_gpu_architecture_basics() {
     std::cout << "- Smaller caches per core" << std::endl;
     std::cout << "- Optimized for parallel execution" << std::endl;
 
+    // TODO: Explain the SIMT model and how it differs from SIMD
     std::cout << "\nSIMT (Single Instruction, Multiple Thread) model:" << std::endl;
     std::cout << "- Unlike SIMD, SIMT executes the same instruction on different data" << std::endl;
     std::cout << "- Threads in a warp execute in lockstep" << std::endl;

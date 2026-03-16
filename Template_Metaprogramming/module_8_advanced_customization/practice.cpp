@@ -7,6 +7,8 @@
 
 // Module 8: Advanced CUTLASS Customization Practice
 // Hands-on tutorial for extending and customizing CUTLASS
+// TODO: Implement each exercise to learn advanced CUTLASS customization
+// TODO: Implement each exercise to learn advanced CUTLASS customization
 
 /*
  * EXERCISE 1: CUSTOM EPILOGUE OPERATIONS
@@ -547,7 +549,8 @@ void exercise_performance_tuning_strategies() {
 
     // Example of memory optimization
     std::cout << "\nMemory optimization example:" << std::endl;
-    MemoryOptimizer<float, struct {}> mem_optimizer;  // Using dummy layout
+    struct DummyLayout {};
+    MemoryOptimizer<float, DummyLayout> mem_optimizer;  // Using dummy layout
     mem_optimizer.print_optimization_suggestions(1024, 1024, 512);
 
     std::cout << "\nPerformance tuning benefits:" << std::endl;

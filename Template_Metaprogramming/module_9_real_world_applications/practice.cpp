@@ -7,6 +7,7 @@
 
 // Module 9: Real-world Applications and Case Studies Practice
 // Hands-on tutorial for practical CUTLASS applications
+// TODO: Implement each exercise to learn real-world CUTLASS applications
 
 /*
  * EXERCISE 1: DEEP LEARNING FRAMEWORK INTEGRATION

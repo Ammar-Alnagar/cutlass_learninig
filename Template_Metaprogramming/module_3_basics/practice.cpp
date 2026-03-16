@@ -8,27 +8,50 @@
 
 // Module 3: Template Metaprogramming Basics Practice
 // Hands-on tutorial for compile-time computation and type manipulation
+// TODO: Implement each exercise to learn template metaprogramming concepts
 
 /*
  * EXERCISE 1: COMPILE-TIME VS RUNTIME COMPUTATION
  * Understanding the differences and benefits of compile-time computation
+ * 
+ * LEARNING OBJECTIVES:
+ * - Understand how template metaprogramming enables compile-time computation
+ * - Learn the difference between runtime and compile-time calculations
+ * - See how template specialization works for base cases
  */
-// Compile-time factorial calculation
+// TODO: Implement compile-time factorial calculation using template metaprogramming
+// Hint: This uses template recursion where each instantiation depends on the previous one
+template<int N>
+struct Factorial {
+    static constexpr int value = N * Factorial<N-1>::value;  // What happens when N=0?
+};
+
+// TODO: Add base case specialization to stop the recursion
+// Hint: What should the factorial of 0 be?
+template<>
+struct Factorial<0> {
+    static constexpr int value = 1;  // Why is this the base case?
+};
+
+// Original implementations kept as reference for learning
+// Uncomment the following code to see a working implementation
+/*
 template<int N>
 struct Factorial {
     static constexpr int value = N * Factorial<N-1>::value;
 };
 
-// Base case specialization
 template<>
 struct Factorial<0> {
     static constexpr int value = 1;
 };
+*/
 
-// Runtime calculation
+// TODO: Implement runtime factorial calculation for comparison
+// Hint: This is a regular recursive function that runs at runtime
 int runtime_factorial(int n) {
     if (n <= 1) return 1;
-    return n * runtime_factorial(n - 1);
+    return n * runtime_factorial(n - 1);  // TODO: Trace through this recursion for n=3
 }
 
 void exercise_compile_time_vs_runtime() {
@@ -40,8 +63,9 @@ void exercise_compile_time_vs_runtime() {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-    // Compile-time calculation (instantaneous at runtime)
-    constexpr int ct_result = Factorial<10>::value;
+    // TODO: Calculate factorial at compile time
+// Hint: This should be instantaneous at runtime since it's computed during compilation
+    constexpr int ct_result = Factorial<10>::value;  // What value should this be?
 
     std::cout << "Runtime result: " << rt_result << std::endl;
     std::cout << "Compile-time result: " << ct_result << std::endl;
@@ -57,21 +81,24 @@ void exercise_compile_time_vs_runtime() {
  * EXERCISE 2: TEMPLATE RECURSION
  * Implementing compile-time algorithms using template recursion
  */
-// Compile-time Fibonacci sequence
+// TODO: Implement compile-time Fibonacci sequence using template metaprogramming
+// Hint: Similar to factorial but depends on two previous values (N-1 and N-2)
+// What happens when we try to instantiate Fibonacci<0> or Fibonacci<1>? They would try to access negative indices which don't exist!
 template<int N>
 struct Fibonacci {
-    static constexpr int value = Fibonacci<N-1>::value + Fibonacci<N-2>::value;
+    static constexpr int value = Fibonacci<N-1>::value + Fibonacci<N-2>::value;  // What happens for N=0 or N=1?
 };
 
-// Base cases
+// TODO: Add base case specializations to stop the recursion
+// Hint: What should Fibonacci<0> and Fibonacci<1> be? (0 and 1 by definition)
 template<>
 struct Fibonacci<0> {
-    static constexpr int value = 0;
+    static constexpr int value = 0;  // Why is this the base case? (By definition, F(0) = 0)
 };
 
 template<>
 struct Fibonacci<1> {
-    static constexpr int value = 1;
+    static constexpr int value = 1;  // Why is this the base case? (By definition, F(1) = 1)
 };
 
 // Sum of numbers from 1 to N at compile time

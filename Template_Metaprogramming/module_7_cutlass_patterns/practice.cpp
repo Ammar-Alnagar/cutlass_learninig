@@ -5,6 +5,7 @@
 
 // Module 7: CUTLASS Template Patterns and Idioms Practice
 // Hands-on tutorial for CUTLASS template patterns and idioms
+// TODO: Implement each exercise to learn CUTLASS template patterns
 
 /*
  * EXERCISE 1: CUTLASS TEMPLATE PARAMETER CONVENTIONS
