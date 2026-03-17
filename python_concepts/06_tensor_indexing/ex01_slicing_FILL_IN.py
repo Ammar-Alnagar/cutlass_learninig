@@ -36,42 +36,48 @@ print(f"Original tensor:\n{t}\n")
 # TODO [EASY]: Extract the first row (shape: [6]).
 # HINT: t[0] or t[0, :]
 
+
 def get_first_row(tensor: torch.Tensor) -> torch.Tensor:
     """Extract first row."""
     # TODO: implement
-    pass
+    return tensor[0]
+
 
 # TODO [EASY]: Extract the first column (shape: [4]).
 # HINT: t[:, 0]
 
+
 def get_first_column(tensor: torch.Tensor) -> torch.Tensor:
     """Extract first column."""
-    # TODO: implement
-    pass
+    return tensor[:, 0]
+
 
 # TODO [EASY]: Extract a 2x3 submatrix from top-left.
 # HINT: t[0:2, 0:3] or t[:2, :3]
 
+
 def get_top_left_submatrix(tensor: torch.Tensor) -> torch.Tensor:
     """Extract 2x3 submatrix from top-left."""
-    # TODO: implement
-    pass
+    return tensor[:2, :3]
+
 
 # TODO [MEDIUM]: Extract every other row (rows 0, 2).
 # HINT: t[::2, :] or t[0::2]
 
+
 def get_even_rows(tensor: torch.Tensor) -> torch.Tensor:
     """Extract every other row."""
-    # TODO: implement
-    pass
+    return tensor[::2, :]
+
 
 # TODO [EASY]: Extract last 2 columns.
 # HINT: t[:, -2:]
 
+
 def get_last_two_columns(tensor: torch.Tensor) -> torch.Tensor:
     """Extract last 2 columns."""
-    # TODO: implement
-    pass
+    return tensor[:, -2:]
+
 
 # ─────────────────────────────────────────────
 # CHECKPOINT — answer after running
@@ -81,11 +87,11 @@ def get_last_two_columns(tensor: torch.Tensor) -> torch.Tensor:
 
 if __name__ == "__main__":
     print("Testing slicing operations...\n")
-    
+
     print(f"First row: {get_first_row(t)}\n")
     print(f"First column: {get_first_column(t)}\n")
     print(f"Top-left 2x3:\n{get_top_left_submatrix(t)}\n")
     print(f"Even rows:\n{get_even_rows(t)}\n")
     print(f"Last 2 columns:\n{get_last_two_columns(t)}\n")
-    
+
     print("Done!")
