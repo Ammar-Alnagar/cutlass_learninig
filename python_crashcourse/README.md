@@ -1,71 +1,90 @@
-# Python Crash Course
+# Python Crash Course for ML Systems & Infrastructure
 
-A hands-on, self-contained Python learning directory for engineers who need to get up to speed fast on Python topics relevant to ML systems, infrastructure, and production engineering.
+A hands-on, exercise-driven Python learning path for engineers working on ML systems, inference infrastructure, and production pipelines.
 
 ## Who This Is For
 
-This course targets engineers with general programming experience (in any language) who need practical Python fluency in areas like tensor operations, async I/O, inter-process communication, and observability. If you already write code professionally but haven't worked deeply with Python's ML/systems ecosystem, this is for you.
+- ML engineers who need to write production-grade Python
+- Systems engineers building inference servers and data pipelines
+- Researchers transitioning code from notebooks to production
+- Anyone who needs to understand Python deeply, fast
 
-No prior Python expertise required — but you should be comfortable with basic programming concepts (functions, loops, data structures).
+This is **not** a beginner course. You should know basic programming concepts. We focus on the Python features that matter for ML infrastructure.
 
----
-
-## Install All Dependencies
-
-Run this single command to install every library used across all seven modules:
+## Installation
 
 ```bash
-pip install torch numpy pydantic fastapi uvicorn httpx structlog pyzmq opentelemetry-sdk prometheus_client
+# Core dependencies for all modules
+pip install torch numpy
+
+# Module 02: Type hints and validation
+pip install pydantic pydantic-settings
+
+# Module 03: Async support (built-in, no install needed)
+
+# Module 04: Itertools (built-in, no install needed)
+
+# Module 05: ZeroMQ and multiprocessing
+pip install pyzmq
+
+# Module 06: FastAPI and structured logging
+pip install fastapi uvicorn[standard] structlog
+
+# Module 07: Benchmarking and observability
+pip install memory-profiler line-profiler opentelemetry-api opentelemetry-sdk prometheus-client
 ```
 
-> **Note:** `asyncio`, `itertools`, `multiprocessing`, `time`, `timeit`, `cProfile`, and `logging` are part of the Python standard library — no installation needed.
+Or install everything at once:
 
----
+```bash
+pip install torch numpy pydantic pyzmq fastapi uvicorn structlog memory-profiler line-profiler opentelemetry-api opentelemetry-sdk prometheus-client
+```
 
 ## Modules
 
-| Module | Name                                          | Description                                                                                                               |
-| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 01     | `module_01_tensor_ops`                        | Tensor creation, reshaping, slicing, fancy indexing, broadcasting, einsum, and strides using PyTorch and NumPy            |
-| 02     | `module_02_dataclasses_pydantic`              | Python type hints, `@dataclass`, Pydantic `BaseModel`, `TypedDict`, and `Protocol` for safe, self-documenting data models |
-| 03     | `module_03_context_managers_async`            | Resource management with context managers and non-blocking async I/O with `asyncio`                                       |
-| 04     | `module_04_generators_comprehensions`         | Lazy evaluation, generator pipelines, comprehensions, and streaming large datasets with `itertools`                       |
-| 05     | `module_05_zeromq_multiprocessing`            | Inter-process communication with ZeroMQ socket patterns, `multiprocessing` primitives, and shared memory                  |
-| 06     | `module_06_fastapi_error_logging`             | Building robust HTTP APIs with FastAPI, structured error handling, and production-grade logging with `structlog`          |
-| 07     | `module_07_timing_benchmarking_observability` | Profiling, statistical benchmarking, OpenTelemetry tracing, and Prometheus metrics for ML workloads                       |
+| # | Module | Topics | Time |
+|---|--------|--------|------|
+| 01 | [Tensor Ops + Indexing](module_01_tensor_ops/) | Tensor creation, reshaping, slicing, broadcasting, einsum, strides | 2-3 hours |
+| 02 | [Dataclasses + Pydantic + Type Hints](module_02_dataclasses_pydantic/) | Type annotations, @dataclass, Pydantic validation, Protocol | 2-3 hours |
+| 03 | [Context Managers + Async Basics](module_03_context_managers_async/) | `with` statement, async/await, async context managers, tasks | 3-4 hours |
+| 04 | [Generators + Comprehensions + Streaming](module_04_generators_comprehensions/) | yield, generator pipelines, comprehensions, itertools, lazy evaluation | 2-3 hours |
+| 05 | [ZeroMQ + Multiprocessing + Shared Memory](module_05_zeromq_multiprocessing/) | ZMQ sockets, multiprocessing, shared memory, worker patterns | 4-5 hours |
+| 06 | [FastAPI + Error Handling + Structured Logging](module_06_fastapi_logging/) | FastAPI routes, Pydantic models, exception handlers, structlog | 3-4 hours |
+| 07 | [Timing + Benchmarking + Observability](module_07_timing_observability/) | perf_counter, cProfile, memory profiling, OpenTelemetry, Prometheus | 3-4 hours |
 
----
+## Recommended Order
 
-## Recommended Completion Order
+1. **Start with Module 01** — Tensor operations are foundational for ML work
+2. **Module 02** — Type safety and validation prevent bugs in production
+3. **Modules 03-04** — Async and generators are critical for efficient I/O and pipelines
+4. **Module 05** — Multiprocessing and ZMQ for scaling beyond single-process limits
+5. **Modules 06-07** — API serving and observability for production deployment
 
-Work through the modules in order — earlier modules introduce vocabulary (type hints, generators) that later modules build on (FastAPI, observability). That said, each module is self-contained enough to study independently if you have a specific gap to fill.
+Total estimated time: **19-26 hours** for complete coverage
 
-| Order | Module                                        | Estimated Time | Notes                                                                             |
-| ----- | --------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
-| 1     | `module_01_tensor_ops`                        | 3–4 hours      | Start here if you work with ML models; foundational for understanding data shapes |
-| 2     | `module_02_dataclasses_pydantic`              | 2–3 hours      | Type safety patterns used in every subsequent module                              |
-| 3     | `module_03_context_managers_async`            | 3–4 hours      | Async patterns are essential for serving and data ingestion                       |
-| 4     | `module_04_generators_comprehensions`         | 2–3 hours      | Lazy evaluation is critical for large-scale data pipelines                        |
-| 5     | `module_05_zeromq_multiprocessing`            | 4–5 hours      | Heaviest module; covers IPC patterns for high-throughput inference                |
-| 6     | `module_06_fastapi_error_logging`             | 3–4 hours      | Builds on modules 02 and 03; covers production API patterns                       |
-| 7     | `module_07_timing_benchmarking_observability` | 3–4 hours      | Capstone module; ties everything together with observability tooling              |
+## How to Use
 
-**Total estimated time: 20–27 hours** (spread across multiple sessions for best retention)
-
----
-
-## How to Use This Course
-
-Each module contains:
-
-- A `README.md` with motivation, concept map, run commands, and help pointers
-- Four exercise files (`01_basics.py` through `04_challenge.py`) with `# TODO:` markers and embedded self-checks
-- A `solutions/` directory with complete, commented reference implementations
-
-Run any exercise file directly:
+1. Read the module README for context and concepts
+2. Work through exercises in order (01 → 02 → 03 → 04)
+3. Fill in the `# TODO:` sections
+4. Run the file to check your answers
+5. Compare with solutions if stuck
 
 ```bash
+# Run an exercise
 python module_01_tensor_ops/01_basics.py
+
+# Run a solution to see how it's done
+python module_01_tensor_ops/solutions/01_basics_solution.py
 ```
 
-Self-checks run automatically and print `✓ Section N passed` or `✗ Section N failed` — no test runner needed.
+## Philosophy
+
+- **Learn by doing**: Every concept is taught through code you write
+- **Real-world context**: Exercises mirror actual ML infrastructure problems
+- **Self-checking**: Assertions tell you immediately if you're correct
+- **No hand-holding**: Comments explain the "why", not just the "what"
+
+## License
+
+MIT License — use this for learning, teaching, or adapting in your own projects.
